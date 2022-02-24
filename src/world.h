@@ -19,16 +19,16 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "definitions/def_world.h"
+#include <stdbool.h>
 #include "entity.h"
 
-enum Block {
-	B_NONE,
-	B_DIRT,
-	B_STONE
-};
+#define WORLD_NAME_MAX_LEN 64
+#define WORLD_MAX_WIDTH 16
+#define WORLD_MAX_HEIGHT 16
+#define WORLD_MAX_ENTITIES 16
 
 typedef struct World {
+	bool invalid;
 	char world_name[WORLD_NAME_MAX_LEN];
     enum Block blocks[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];	// actual terrain
     enum Block walls[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];	// no collision and looks different
@@ -37,10 +37,10 @@ typedef struct World {
     SDL_Texture *wall_textures[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];
 } World ;
 
-void World_print( const World* );
+void print_world( const World* );
 
-void World_write( const World* );
+void write_world( World* );
 
-World World_read( const char* );
+World read_world( const char* );
 
 #endif /* WORLD_H */

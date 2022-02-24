@@ -16,16 +16,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef DEF_WORLD_H
-#define DEF_WORLD_H
+#include <stdio.h>
+#include "log.h"
 
-#include <stdint.h>
+FILE *logfile;
 
-#define WORLD_NAME_MAX_LEN 64
-#define WORLD_MAX_WIDTH 16
-#define WORLD_MAX_HEIGHT 16
-#define WORLD_MAX_ENTITIES 16
+void log_err( const char *msg ) {
+	fprintf(logfile, "ERROR: %s\n", msg);
+}
 
-static const uint32_t BLOCK_SIZE = 32;
-
-#endif /* DEF_WORLD_H */
+void log_warn( const char *msg ) {
+	fprintf(logfile, "WARNING: %s\n", msg);
+}

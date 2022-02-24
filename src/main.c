@@ -19,24 +19,162 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <SDL.h>
-#include "definitions/def_app.h"
-#include "definitions/def_files.h"
+#include "app.h"
+#include "log.h"
 #include "world.h"
 #include "sprite.h"
 
-typedef struct BlockSprites {
-	Sprite dirt;
-	Sprite stone;
-} BlockSprites ;
+#ifdef _WIN32
+# define SLASH "\\"
+#else
+# define SLASH "/"
+#endif
+
+#define PATH_TEXTURES_BLOCKS PATH_TEXTURES "blocks"
+#define PATH_TEXTURES_ENTITIES PATH_TEXTURES "entities"
+static const char PATH_TEXTURE_BLOCK_DIRT[] = PATH_TEXTURES_BLOCKS SLASH "dirt.png";
+static const char PATH_TEXTURE_BLOCK_STONE[] = PATH_TEXTURES_BLOCKS SLASH "stone.png";
+static const char PATH_TEXTURE_ENT_PLAYER[] = PATH_TEXTURES_ENTITIES SLASH "player.png";
+
+void gen_demo_vertical( void ) {
+	World out = {
+		.world_name = "test",
+		.blocks = {
+			[5] = {
+				[0] = B_DIRT,
+				[1] = B_DIRT,
+				[2] = B_DIRT,
+				[3] = B_DIRT,
+				[4] = B_DIRT,
+				[5] = B_DIRT
+			},
+			[6] = {
+				[1] = B_STONE,
+				[2] = B_STONE,
+				[3] = B_STONE,
+				[4] = B_STONE,
+				[5] = B_STONE,
+				[6] = B_STONE,
+				[7] = B_STONE,
+			}
+		},
+		.walls = {
+			[3] = {
+				[0] = B_DIRT,
+				[1] = B_DIRT,
+				[2] = B_DIRT,
+				[3] = B_DIRT
+			},
+			[4] = {
+				[0] = B_DIRT,
+				[1] = B_DIRT,
+				[2] = B_DIRT,
+				[3] = B_DIRT,
+				[4] = B_DIRT
+			}
+		}
+	};
+	World in;
+
+	write_world(&out);
+	in = read_world("test");
+
+	print_world(&out);
+	print_world(&in);
+}
+
+void gen_demo_horizontal( void ) {
+	World out = {
+		.world_name = "test",
+		.blocks = {
+			[0] = {
+				[5] = B_DIRT
+			},
+			[1] = {
+				[5] = B_DIRT,
+				[6] = B_STONE
+			},
+			[2] = {
+				[5] = B_DIRT,
+				[6] = B_STONE
+			},
+			[3] = {
+				[5] = B_DIRT,
+				[6] = B_STONE
+			},
+			[4] = {
+				[5] = B_DIRT,
+				[6] = B_STONE
+			},
+			[5] = {
+				[5] = B_DIRT,
+				[6] = B_STONE
+			},
+			[6] = {
+				[6] = B_STONE
+			},
+			[7] = {
+				[6] = B_STONE
+			}
+		},
+		.walls = {
+			[0] = {
+				[3] = B_DIRT,
+				[4] = B_DIRT
+			},
+			[1] = {
+				[3] = B_DIRT,
+				[4] = B_DIRT
+			},
+			[2] = {
+				[3] = B_DIRT,
+				[4] = B_DIRT
+			},
+			[3] = {
+				[3] = B_DIRT,
+				[4] = B_DIRT
+			},
+			[4] = {
+				[4] = B_DIRT
+			}
+		},
+		.entities[0] = {
+			.type = E_PLAYER,
+			.rect = {
+				.x = 2 * BLOCK_SIZE,
+				.y = 1 * BLOCK_SIZE,
+				.w = PLAYER_WIDTH,
+				.h = PLAYER_HEIGHT
+			}
+		}
+	};
+	World in;
+
+	write_world(&out);
+	in = read_world("test");
+
+	print_world(&out);
+	print_world(&in);
+}
 
 int main( int argc, char *argv[] ) {
-	World world;
+	World world = {.invalid = false};
 	SDL_Window *window;
 	SDL_Renderer *renderer;
-	BlockSprites spr_blocks;
+	Sprite spr_block_dirt = {.invalid = false};
+	Sprite spr_block_stone = {.invalid = false};
+	Sprite spr_ent_player = {.invalid = false};
 	bool active = true;
 	SDL_Rect temp;
 	SDL_Event event;
+
+	// open log file and check
+	logfile = fopen(PATH_LOG, "a");
+
+	if (logfile == NULL) {
+		printf("Log file \"%s\" could not be opened.\nAbort.\n", PATH_LOG);
+		return 1;
+	}
 
 	// if no world name given, stop
 	if (argc < 2) {
@@ -44,11 +182,18 @@ int main( int argc, char *argv[] ) {
 		return 0;
 	}
 
-	// open world
-	world = World_read(argv[1]);
+	// open world and check
+	world = read_world(argv[1]);
+
+	if (world.invalid) {
+		return 1;
+	}
 
     // init SDL
-    SDL_Init(SDL_INIT_VIDEO);
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    	log_err("SDL could not initialize.");
+    	return 1;
+    }
 
     // create window and renderer
     window = SDL_CreateWindow(
@@ -58,9 +203,23 @@ int main( int argc, char *argv[] ) {
     	SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, 0);
 
+    // check window and renderer
+    if (window == NULL || renderer == NULL) {
+    	log_err("SDL could not open a window and renderer.");
+    	return 1;
+    }
+
     // load sprites
-    spr_blocks.dirt = Sprite_from_file(renderer, PATH_TEXTURE_BLOCK_DIRT);
-    spr_blocks.stone = Sprite_from_file(renderer, PATH_TEXTURE_BLOCK_STONE);
+    spr_block_dirt = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_DIRT);
+    spr_block_stone = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_STONE);
+    spr_ent_player = sprite_from_file(renderer, PATH_TEXTURE_ENT_PLAYER);
+
+    // check sprites
+    if (spr_block_dirt.invalid ||
+    	spr_block_stone.invalid ||
+    	spr_ent_player.invalid) {
+    	return 1;
+	}
 
     // map textures
     for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++) {
@@ -73,11 +232,11 @@ int main( int argc, char *argv[] ) {
     			break;
 
 			case B_DIRT:
-    			world.block_textures[x][y] = spr_blocks.dirt.texture;
+    			world.block_textures[x][y] = spr_block_dirt.texture;
     			break;
 
 			case B_STONE:
-    			world.block_textures[x][y] = spr_blocks.stone.texture;
+    			world.block_textures[x][y] = spr_block_stone.texture;
     			break;
     		}
 
@@ -88,11 +247,11 @@ int main( int argc, char *argv[] ) {
     			break;
 
 			case B_DIRT:
-    			world.wall_textures[x][y] = spr_blocks.dirt.texture;
+    			world.wall_textures[x][y] = spr_block_dirt.texture;
     			break;
 
 			case B_STONE:
-    			world.wall_textures[x][y] = spr_blocks.stone.texture;
+    			world.wall_textures[x][y] = spr_block_stone.texture;
     			break;
     		}
 		}
@@ -126,7 +285,23 @@ int main( int argc, char *argv[] ) {
 			}
 		}
 
-		// draw
+		// draw entities
+		for (uint32_t i = 0; i < WORLD_MAX_ENTITIES; i++) {
+            switch (world.entities[i].type) {
+            case E_NONE:
+            	break;
+
+            case E_PLAYER:
+            	SDL_RenderCopy(
+            		renderer,
+            		spr_ent_player.texture,
+            		NULL,
+            		&world.entities[i].rect);
+				break;
+            }
+		}
+
+		// show drawn image
 		SDL_RenderPresent(renderer);
 
 		// handle events
@@ -135,127 +310,27 @@ int main( int argc, char *argv[] ) {
 			case SDL_QUIT:
 				active = false;
                 break;
+
+			/*case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) {
+				case SDLK_w:
+
+                }
+				break;*/
 			}
 		}
     }
 
+    // clear sprites
+    clear_sprite(&spr_block_dirt);
+    clear_sprite(&spr_block_stone);
+    clear_sprite(&spr_ent_player);
+
     // quit SDL
     SDL_Quit();
 
+    //close log file
+    fclose(logfile);
+
 	return 0;
 }
-
-/* TODO delete as soon as testing world io done
-World in = {
-	.world_name = "test",
-	.blocks = {
-		[5] = {
-			[0] = B_DIRT,
-			[1] = B_DIRT,
-			[2] = B_DIRT,
-			[3] = B_DIRT,
-			[4] = B_DIRT,
-			[5] = B_DIRT
-		},
-		[6] = {
-			[1] = B_STONE,
-			[2] = B_STONE,
-			[3] = B_STONE,
-			[4] = B_STONE,
-			[5] = B_STONE,
-			[6] = B_STONE,
-			[7] = B_STONE,
-		}
-	},
-	.walls = {
-		[3] = {
-			[0] = B_DIRT,
-			[1] = B_DIRT,
-			[2] = B_DIRT,
-			[3] = B_DIRT
-		},
-		[4] = {
-			[0] = B_DIRT,
-			[1] = B_DIRT,
-			[2] = B_DIRT,
-			[3] = B_DIRT,
-			[4] = B_DIRT
-		}
-	}
-};
-World out;
-
-World_write(&in);
-out = World_read("test");
-
-World_print(&in);
-World_print(&out);
-return 0;
-*/
-
-
-/* TODO delete as soon as testing world io done
-World in = {
-	.world_name = "test",
-	.blocks = {
-		[0] = {
-			[5] = B_DIRT
-		},
-		[1] = {
-			[5] = B_DIRT,
-			[6] = B_STONE
-		},
-		[2] = {
-			[5] = B_DIRT,
-			[6] = B_STONE
-		},
-		[3] = {
-			[5] = B_DIRT,
-			[6] = B_STONE
-		},
-		[4] = {
-			[5] = B_DIRT,
-			[6] = B_STONE
-		},
-		[5] = {
-			[5] = B_DIRT,
-			[6] = B_STONE
-		},
-		[6] = {
-			[6] = B_STONE
-		},
-		[7] = {
-			[6] = B_STONE
-		}
-	},
-	.walls = {
-		[0] = {
-			[3] = B_DIRT,
-			[4] = B_DIRT
-		},
-		[1] = {
-			[3] = B_DIRT,
-			[4] = B_DIRT
-		},
-		[2] = {
-			[3] = B_DIRT,
-			[4] = B_DIRT
-		},
-		[3] = {
-			[3] = B_DIRT,
-			[4] = B_DIRT
-		},
-		[4] = {
-			[4] = B_DIRT
-		}
-	}
-};
-World out;
-
-World_write(&in);
-out = World_read("test");
-
-World_print(&in);
-World_print(&out);
-return 0;
-*/

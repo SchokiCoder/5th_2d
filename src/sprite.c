@@ -18,45 +18,57 @@
 
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include "log.h"
 #include "sprite.h"
 
-Sprite Sprite_from_file( SDL_Renderer *renderer, const char *filepath ) {
-	Sprite result;
+void sprite_create_texture( Sprite *sprite, SDL_Renderer *renderer, const char *source ) {
+	char msg[LOG_MAX_LEN];
 
-	// load image
+	// create texture
+	sprite->texture = SDL_CreateTextureFromSurface(renderer, sprite->surface);
+
+	// check
+	if (sprite->texture == NULL) {
+		sprintf(msg, "Sprite \"%s\" could not be initialized.", source);
+		log_err(msg);
+		sprite->invalid = true;
+	}
+}
+
+Sprite sprite_from_file( SDL_Renderer *renderer, const char *filepath ) {
+	Sprite result = {.invalid = false};
+
+	// load image, create texture
 	result.surface = IMG_Load(filepath);
+	sprite_create_texture(&result, renderer, filepath);
 
-	// create texture
-	result.texture = SDL_CreateTextureFromSurface(renderer, result.surface);
-
-	// return
 	return result;
 }
 
-Sprite Sprite_from_text( SDL_Renderer *renderer, const char *text, TTF_Font *font, SDL_Color color ) {
-	Sprite result;
+Sprite sprite_from_text( SDL_Renderer *renderer, const char *text, TTF_Font *font, SDL_Color color ) {
+	Sprite result = {.invalid = false};
 
-	// create text
+	// create text, create texture
 	result.surface = TTF_RenderText_Solid(font, text, color);
+	sprite_create_texture(&result, renderer, text);
 
-	// create texture
-	result.texture = SDL_CreateTextureFromSurface(renderer, result.surface);
-
-	// return
 	return result;
 }
 
-void Sprite_clear( Sprite *self ) {
+void clear_sprite( Sprite *sprite ) {
+	//reset values
+	sprite->invalid = false;
+
 	// if surface and texture exist, clear them
-	if (self->surface != NULL)
+	if (sprite->surface != NULL)
 	{
-		SDL_FreeSurface(self->surface);
-		self->surface = NULL;
+		SDL_FreeSurface(sprite->surface);
+		sprite->surface = NULL;
 	}
 
-	if (self->texture != NULL)
+	if (sprite->texture != NULL)
 	{
-		SDL_DestroyTexture(self->texture);
-		self->texture = NULL;
+		SDL_DestroyTexture(sprite->texture);
+		sprite->texture = NULL;
 	}
 }

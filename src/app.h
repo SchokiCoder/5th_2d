@@ -16,24 +16,17 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPRITE_H
-#define SPRITE_H
+#ifndef APP_H
+#define APP_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <SDL.h>
-#include <SDL_ttf.h>
+static const char APP_NAME[] = "Chemarium";
+static const char APP_LICENSE[] = "GPLv3";
+static const char APP_LICENSE_NOTICE[] =
+	"You should have received a copy of the GNU General Public License\n" \
+	"along with this program.  If not, see <https://www.gnu.org/licenses/>.\n";
+static const char APP_SOURCE[] = "https://github.com/SchokiCoder/smng";
+static const uint32_t APP_MAJOR = 0;
+static const uint32_t APP_MINOR = 0;
+static const uint32_t APP_PATCH = 0;
 
-typedef struct Sprite {
-	bool invalid;
-	SDL_Surface *surface;
-	SDL_Texture *texture;
-} Sprite ;
-
-Sprite sprite_from_file( SDL_Renderer*, const char* );
-
-Sprite sprite_from_text( SDL_Renderer*, const char*, TTF_Font*, SDL_Color);
-
-void clear_sprite( Sprite* );
-
-#endif /* SPRITE_H */
+#endif /* APP_H */

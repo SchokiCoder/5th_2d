@@ -16,10 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef DEF_FILES_H
-#define DEF_FILES_H
+#ifndef LOG_H
+#define LOG_H
 
-static const char PATH_TEXTURE_BLOCK_DIRT[] = PATH_TEXTURES "blocks/dirt.png";
-static const char PATH_TEXTURE_BLOCK_STONE[] = PATH_TEXTURES "blocks/stone.png";
+static const char PATH_LOG[] = "log.txt";
+#define LOG_MAX_LEN 128
 
-#endif /* DEF_FILES_H */
+extern FILE *logfile;
+
+void log_err( const char* );
+
+void log_warn( const char* );
+
+#endif /* LOG_H */

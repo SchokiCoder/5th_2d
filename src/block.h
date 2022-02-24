@@ -16,17 +16,17 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef DEF_APP_H
-#define DEF_APP_H
+#ifndef BLOCK_H
+#define BLOCK_H
 
-static const char APP_NAME[] = "Chemarium";
-static const char APP_LICENSE[] = "GPLv3";
-static const char APP_LICENSE_NOTICE[] =
-	"You should have received a copy of the GNU General Public License\n" \
-	"along with this program.  If not, see <https://www.gnu.org/licenses/>.\n";
-static const char APP_SOURCE[] = "https://github.com/SchokiCoder/smng";
-static const uint32_t APP_MAJOR = 0;
-static const uint32_t APP_MINOR = 0;
-static const uint32_t APP_PATCH = 0;
+#include <stdint.h>
 
-#endif /* DEF_APP_H */
+static const uint32_t BLOCK_SIZE = 32;
+
+enum Block {
+	B_NONE,
+	B_DIRT,
+	B_STONE
+};
+
+#endif /* BLOCK_H */

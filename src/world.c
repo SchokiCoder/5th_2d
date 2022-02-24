@@ -18,57 +18,78 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "world.h"
 #include "entity.h"
+#include "log.h"
+#include "world.h"
 
-void World_print( const World *self ) {
+void print_world( const World *world ) {
 	// print name
-	printf("world_name: %s\n", self->world_name);
+	printf("world_name: %s\n", world->world_name);
 
 	// print blocks
 	for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++) {
 		for (uint32_t y = 0; y < WORLD_MAX_HEIGHT; y++) {
-			printf("%u", self->blocks[x][y]);
+			printf("%u", world->blocks[x][y]);
 		}
 		printf("\n");
 	}
+
+	//print 1st entity
+    printf(
+    	"%i: %u, %u, %u, %u\n",
+    	world->entities[0].type,
+    	world->entities[0].rect.x, world->entities[0].rect.y,
+    	world->entities[0].rect.w, world->entities[0].rect.h);
 }
 
-void World_write( const World *self ) {
+void write_world( World *world ) {
 	FILE *f;
 
 	// open file
-	f = fopen(self->world_name, "w");
+	f = fopen(world->world_name, "w");
+
+	// if file did not open, set flag and stop
+	if (f == NULL) {
+		log_err("World could not be read.");
+		world->invalid = true;
+		return;
+	}
 
 	// write blocks
     for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++) {
-    	fwrite(self->blocks[x], sizeof(self->blocks[x][0]), WORLD_MAX_WIDTH, f);
+    	fwrite(world->blocks[x], sizeof(world->blocks[x][0]), WORLD_MAX_WIDTH, f);
     }
 
     // write walls
     for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++) {
-    	fwrite(self->walls[x], sizeof(self->walls[x][0]), WORLD_MAX_WIDTH, f);
+    	fwrite(world->walls[x], sizeof(world->walls[x][0]), WORLD_MAX_WIDTH, f);
     }
 
     // write entities
     for (uint32_t i = 0; i < WORLD_MAX_ENTITIES; i++) {
-    	fwrite(&self->entities[i].type, sizeof(self->entities[i].type), 1, f);
-    	fwrite(&self->entities[i].pos.x, sizeof(self->entities[i].pos.x), 1, f);
-    	fwrite(&self->entities[i].pos.y, sizeof(self->entities[i].pos.y), 1, f);
-    	fwrite(&self->entities[i].pos.w, sizeof(self->entities[i].pos.w), 1, f);
-    	fwrite(&self->entities[i].pos.h, sizeof(self->entities[i].pos.h), 1, f);
+    	fwrite(&world->entities[i].type, sizeof(world->entities[i].type), 1, f);
+    	fwrite(&world->entities[i].rect.x, sizeof(world->entities[i].rect.x), 1, f);
+    	fwrite(&world->entities[i].rect.y, sizeof(world->entities[i].rect.y), 1, f);
+    	fwrite(&world->entities[i].rect.w, sizeof(world->entities[i].rect.w), 1, f);
+    	fwrite(&world->entities[i].rect.h, sizeof(world->entities[i].rect.h), 1, f);
     }
 
     // close file
     fclose(f);
 }
 
-World World_read( const char *world_name ) {
+World read_world( const char *world_name ) {
 	World result;
 	FILE *f;
 
 	// open file
 	f = fopen(world_name, "r");
+
+	// if file did not open, set flag and stop
+	if (f == NULL) {
+		result.invalid = true;
+		return result;
+	}
 
 	// set name
 	strcpy(result.world_name, world_name);
@@ -86,10 +107,10 @@ World World_read( const char *world_name ) {
 	// read entitites
 	for (uint32_t i = 0; i < WORLD_MAX_ENTITIES; i++) {
 		fread(&result.entities[i].type, sizeof(result.entities[i].type), 1, f);
-		fread(&result.entities[i].pos.x, sizeof(result.entities[i].pos.x), 1, f);
-		fread(&result.entities[i].pos.y, sizeof(result.entities[i].pos.y), 1, f);
-		fread(&result.entities[i].pos.w, sizeof(result.entities[i].pos.w), 1, f);
-		fread(&result.entities[i].pos.h, sizeof(result.entities[i].pos.h), 1, f);
+		fread(&result.entities[i].rect.x, sizeof(result.entities[i].rect.x), 1, f);
+		fread(&result.entities[i].rect.y, sizeof(result.entities[i].rect.y), 1, f);
+		fread(&result.entities[i].rect.w, sizeof(result.entities[i].rect.w), 1, f);
+		fread(&result.entities[i].rect.h, sizeof(result.entities[i].rect.h), 1, f);
 	}
 
 	// close file, return
