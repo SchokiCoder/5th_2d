@@ -18,7 +18,7 @@ CC = cc
 APP_NAME = chemarium
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -O3
 INCLUDE = -I /usr/include/SDL2
-LIBS = -l SDL2 -l SDL2_image -l SDL2_ttf
+LIBS = -l m -l SDL2 -l SDL2_image -l SDL2_ttf
 
 INSTALL_BIN_DIR = /usr/bin
 INSTALL_ASSETS_DIR = /usr/share/${APP_NAME}

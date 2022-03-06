@@ -27,7 +27,8 @@
 #define WORLD_MAX_HEIGHT 16
 #define WORLD_MAX_ENTITIES 16
 
-typedef struct World {
+typedef struct World
+{
 	bool invalid;
 	char world_name[WORLD_NAME_MAX_LEN];
     enum Block blocks[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];	// actual terrain
@@ -36,8 +37,6 @@ typedef struct World {
     SDL_Texture *block_textures[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];
     SDL_Texture *wall_textures[WORLD_MAX_WIDTH][WORLD_MAX_HEIGHT];
 } World ;
-
-void print_world( const World* );
 
 void write_world( World* );
 

@@ -16,20 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef BLOCK_H
-#define BLOCK_H
+#ifndef PLAYER_H
+#define PLAYER_H
 
 #include <stdint.h>
+#include "block.h"
 
-#define NUM_BLOCK_TYPES 3
+// movement values (per second)
+static const float PLAYER_ACCELERATION = (float) BLOCK_SIZE * 2.0;
+static const float PLAYER_MAX_VELOCITY = (float) BLOCK_SIZE * 6.0;
 
-static const uint32_t BLOCK_SIZE = 32;
-
-enum Block
+typedef struct Rect
 {
-	B_NONE,
-	B_DIRT,
-	B_STONE
-};
+	float x, y, w, h;
+} Rect ;
 
-#endif /* BLOCK_H */
+typedef struct Player
+{
+    Rect rect;
+    float velocity_x, velocity_y;
+} Player ;
+
+void move_player_x( Player *player, float x_distance, World *world );
+void move_player_y( Player *player, float y_distance, World *world );
+
+#endif /* PLAYER_H */

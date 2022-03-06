@@ -21,21 +21,24 @@
 #include "log.h"
 #include "sprite.h"
 
-void sprite_create_texture( Sprite *sprite, SDL_Renderer *renderer, const char *source ) {
+void sprite_create_texture( Sprite *sprite, SDL_Renderer *renderer, const char *source )
+{
 	char msg[LOG_MAX_LEN];
 
 	// create texture
 	sprite->texture = SDL_CreateTextureFromSurface(renderer, sprite->surface);
 
 	// check
-	if (sprite->texture == NULL) {
+	if (sprite->texture == NULL)
+	{
 		sprintf(msg, "Sprite \"%s\" could not be initialized.", source);
 		log_err(msg);
 		sprite->invalid = true;
 	}
 }
 
-Sprite sprite_from_file( SDL_Renderer *renderer, const char *filepath ) {
+Sprite sprite_from_file( SDL_Renderer *renderer, const char *filepath )
+{
 	Sprite result = {.invalid = false};
 
 	// load image, create texture
@@ -45,7 +48,8 @@ Sprite sprite_from_file( SDL_Renderer *renderer, const char *filepath ) {
 	return result;
 }
 
-Sprite sprite_from_text( SDL_Renderer *renderer, const char *text, TTF_Font *font, SDL_Color color ) {
+Sprite sprite_from_text( SDL_Renderer *renderer, const char *text, TTF_Font *font, SDL_Color color )
+{
 	Sprite result = {.invalid = false};
 
 	// create text, create texture
@@ -55,7 +59,8 @@ Sprite sprite_from_text( SDL_Renderer *renderer, const char *text, TTF_Font *fon
 	return result;
 }
 
-void clear_sprite( Sprite *sprite ) {
+void clear_sprite( Sprite *sprite )
+{
 	//reset values
 	sprite->invalid = false;
 

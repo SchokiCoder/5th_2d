@@ -22,27 +22,8 @@
 #include "log.h"
 #include "world.h"
 
-void print_world( const World *world ) {
-	// print name
-	printf("world_name: %s\n", world->world_name);
-
-	// print blocks
-	for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++) {
-		for (uint32_t y = 0; y < WORLD_MAX_HEIGHT; y++) {
-			printf("%u", world->blocks[x][y]);
-		}
-		printf("\n");
-	}
-
-	//print 1st entity
-    printf(
-    	"%i: %u, %u, %u, %u\n",
-    	world->entities[0].type,
-    	world->entities[0].rect.x, world->entities[0].rect.y,
-    	world->entities[0].rect.w, world->entities[0].rect.h);
-}
-
-void write_world( World *world ) {
+void write_world( World *world )
+{
 	FILE *f;
 
 	// open file
@@ -78,7 +59,8 @@ void write_world( World *world ) {
     fclose(f);
 }
 
-World read_world( const char *world_name ) {
+World read_world( const char *world_name )
+{
 	World result;
 	FILE *f;
 

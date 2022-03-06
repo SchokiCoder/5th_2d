@@ -24,7 +24,8 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-typedef struct Sprite {
+typedef struct Sprite
+{
 	bool invalid;
 	SDL_Surface *surface;
 	SDL_Texture *texture;
@@ -33,6 +34,8 @@ typedef struct Sprite {
 Sprite sprite_from_file( SDL_Renderer*, const char* );
 
 Sprite sprite_from_text( SDL_Renderer*, const char*, TTF_Font*, SDL_Color);
+
+void sprite_create_texture( Sprite *sprite, SDL_Renderer *renderer, const char *source );
 
 void clear_sprite( Sprite* );
 

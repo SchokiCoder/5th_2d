@@ -16,20 +16,22 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef BLOCK_H
-#define BLOCK_H
-
-#include <stdint.h>
-
-#define NUM_BLOCK_TYPES 3
-
-static const uint32_t BLOCK_SIZE = 32;
-
-enum Block
-{
-	B_NONE,
-	B_DIRT,
-	B_STONE
+static const char MOTDS[][64] = {
+	"5th Revision",
+	"Striitit!",
+	"Alea iacta est",
+	"Covfefe",
+	"yaaay",
+	"Bonus Ducks!",
+	"The cake is just shy",
+	"Slap my hand!",
+	"Roggan",
+	"Knock Knock... there runs a pirate with a wooden leg",
+	"afterall",
+	"MARKETING_STRATEGY_HERE",
+	"i mean, if you don't mind.",
+	"33% Red, 33% Green, 33% Blue, 1% Unknown",
+	"Oktoberfest!",
+	"Advertiser friendly.",
+	"i guess"
 };
-
-#endif /* BLOCK_H */

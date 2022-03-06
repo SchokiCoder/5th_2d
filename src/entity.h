@@ -26,12 +26,14 @@
 static const uint32_t PLAYER_WIDTH = BLOCK_SIZE * 2 - 6;
 static const uint32_t PLAYER_HEIGHT = BLOCK_SIZE * 3 - 8;
 
-enum EntityType {
+enum EntityType
+{
 	E_NONE,
 	E_PLAYER
 };
 
-typedef struct Entity {
+typedef struct Entity
+{
 	enum EntityType type;
 	SDL_Rect rect;
 } Entity ;
