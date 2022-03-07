@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include "block.h"
 
+#define NUM_ENT_TYPES 2
+
 static const uint32_t PLAYER_WIDTH = BLOCK_SIZE * 2 - 6;
 static const uint32_t PLAYER_HEIGHT = BLOCK_SIZE * 3 - 8;
 

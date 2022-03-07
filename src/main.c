@@ -28,8 +28,6 @@
 #include "sprite.h"
 #include "player.h"
 
-static const float GRAVITY = BLOCK_SIZE;
-
 #ifdef _WIN32
 # define SLASH "\\"
 #else
@@ -177,9 +175,7 @@ int main( int argc, char *argv[] )
 	SDL_Renderer *renderer;
 	Sprite spr_blocks[NUM_BLOCK_TYPES];
 	Sprite spr_walls[NUM_BLOCK_TYPES];
-	/*Sprite spr_block_dirt = {.invalid = false};
-	Sprite spr_block_stone = {.invalid = false};*/
-	Sprite spr_ent_player = {.invalid = false};
+	Sprite spr_ents[NUM_ENT_TYPES];
 	bool active = true;
 	SDL_Rect temp;
 	SDL_Event event;
@@ -244,29 +240,18 @@ int main( int argc, char *argv[] )
     	return 1;
     }
 
-    // load sprites
-    /*
-    spr_block_dirt = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_DIRT);
-    spr_block_stone = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_STONE);*/
+    // load block sprites
     spr_blocks[B_NONE].surface = NULL;
     spr_blocks[B_NONE].texture = NULL;
     spr_blocks[B_NONE].invalid = false;
     spr_blocks[B_DIRT] = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_DIRT);
     spr_blocks[B_STONE] = sprite_from_file(renderer, PATH_TEXTURE_BLOCK_STONE);
-    spr_ent_player = sprite_from_file(renderer, PATH_TEXTURE_ENT_PLAYER);
 
     // check block sprites
     for (uint32_t i = 1; i < NUM_BLOCK_TYPES; i++)
     {
     	if (spr_blocks[i].invalid)
     		return 1;
-	}
-
-    if (/*spr_block_dirt.invalid ||
-    	spr_block_stone.invalid ||*/
-    	spr_ent_player.invalid)
-	{
-    	return 1;
 	}
 
 	// create wall sprites
@@ -294,42 +279,26 @@ int main( int argc, char *argv[] )
     		return 1;
 	}
 
+	// load ent sprites
+	spr_ents[E_NONE].surface = NULL;
+	spr_ents[E_NONE].texture = NULL;
+	spr_ents[E_NONE].invalid = false;
+	spr_ents[E_PLAYER] = sprite_from_file(renderer, PATH_TEXTURE_ENT_PLAYER);
+
+	// check ent sprites
+	for (uint32_t i = 1; i < NUM_ENT_TYPES; i++)
+    {
+		if (spr_ents[i].invalid)
+		{
+			return 1;
+		}
+	}
+
     // map textures
     for (uint32_t x = 0; x < WORLD_MAX_WIDTH; x++)
     {
     	for (uint32_t y = 0; y < WORLD_MAX_HEIGHT; y++)
     	{
-    		/*
-    		// to blocks
-    		switch (world.blocks[x][y]) {
-    		case B_NONE:
-    			world.block_textures[x][y] = NULL;
-    			break;
-
-			case B_DIRT:
-    			world.block_textures[x][y] = spr_block_dirt.texture;
-    			break;
-
-			case B_STONE:
-    			world.block_textures[x][y] = spr_block_stone.texture;
-    			break;
-    		}
-
-    		// to walls
-    		switch (world.walls[x][y]) {
-    		case B_NONE:
-    			world.wall_textures[x][y] = NULL;
-    			break;
-
-			case B_DIRT:
-    			world.wall_textures[x][y] = spr_block_dirt.texture;
-    			break;
-
-			case B_STONE:
-    			world.wall_textures[x][y] = spr_block_stone.texture;
-    			break;
-    		}*/
-
             world.block_textures[x][y] = spr_blocks[world.blocks[x][y]].texture;
             world.wall_textures[x][y] = spr_walls[world.walls[x][y]].texture;
 		}
@@ -346,7 +315,7 @@ int main( int argc, char *argv[] )
 		// handle keyboard
 		if (kbd[SDL_SCANCODE_A])
 		{
-			player.velocity_x -= PLAYER_ACCELERATION;
+			player.velocity_x -= PLAYER_ACCELERATION * delta;
 
 			if (player.velocity_x < PLAYER_MAX_VELOCITY * -1)
 				player.velocity_x = PLAYER_MAX_VELOCITY * -1;
@@ -354,10 +323,18 @@ int main( int argc, char *argv[] )
 
 		if (kbd[SDL_SCANCODE_D])
 		{
-			player.velocity_x += PLAYER_ACCELERATION;
+			player.velocity_x += PLAYER_ACCELERATION * delta;
 
 			if (player.velocity_x > PLAYER_MAX_VELOCITY)
 				player.velocity_x = PLAYER_MAX_VELOCITY;
+		}
+
+		if (kbd[SDL_SCANCODE_SPACE])
+		{
+			if (player.grounded)
+			{
+				player.velocity_y -= PLAYER_JUMP_VELOCITY;
+			}
 		}
 
 		// handle events
@@ -373,7 +350,13 @@ int main( int argc, char *argv[] )
 		}
 
 		// gravity
-		player.velocity_y += GRAVITY;
+		player.velocity_y += GRAVITY * delta;
+
+		// walking friction
+		if (player.grounded)
+		{
+			player.velocity_x -= (player.velocity_x * PLAYER_WALKING_FRICTION * delta);
+		}
 
 		// movement proccessing
 		x_step = player.velocity_x * delta;
@@ -429,7 +412,7 @@ int main( int argc, char *argv[] )
 
 		SDL_RenderCopy(
 			renderer,
-			spr_ent_player.texture,
+			spr_ents[E_PLAYER].texture,
 			NULL,
 			&temp);
 
@@ -442,16 +425,16 @@ int main( int argc, char *argv[] )
 	}
 
     // clear sprites
-    /*clear_sprite(&spr_block_dirt);
-    clear_sprite(&spr_block_stone);*/
-
     for (uint32_t i = 1; i < NUM_BLOCK_TYPES; i++)
     {
     	clear_sprite(&spr_blocks[i]);
     	clear_sprite(&spr_walls[i]);
     }
 
-    clear_sprite(&spr_ent_player);
+    for (uint32_t i = 1; i < NUM_ENT_TYPES; i++)
+    {
+    	clear_sprite(&spr_ents[i]);
+	}
 
     // quit SDL
     SDL_Quit();

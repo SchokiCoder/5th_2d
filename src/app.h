@@ -26,7 +26,7 @@ static const char APP_LICENSE_NOTICE[] =
 	"along with this program.  If not, see <https://www.gnu.org/licenses/>.\n";
 static const char APP_SOURCE[] = "https://github.com/SchokiCoder/smng";
 static const uint32_t APP_MAJOR = 0;
-static const uint32_t APP_MINOR = 0;
+static const uint32_t APP_MINOR = 1;
 static const uint32_t APP_PATCH = 0;
 
 #endif /* APP_H */

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Chemarium
+Icon=chemarium
+GenericName=Open-source platforming and puzzle game
+Exec=chemarium
+Terminal=false
+StartupNotifiy=false
+Type=Application
+Categories=Game
+Keywords=game;
+PrefersNonDefaultGPU=true
