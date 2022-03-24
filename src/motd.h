@@ -18,6 +18,7 @@
 
 static const char MOTDS[][64] = {
 	"5th Revision",
+	"my oldest project",
 	"Striitit!",
 	"Alea iacta est",
 	"Covfefe",

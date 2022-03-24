@@ -18,8 +18,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <SM_log.h>
 #include "entity.h"
-#include "log.h"
 #include "world.h"
 
 void write_world( World *world )
@@ -31,7 +31,7 @@ void write_world( World *world )
 
 	// if file did not open, set flag and stop
 	if (f == NULL) {
-		log_err("World could not be read.");
+		SM_log_err("World could not be read.");
 		world->invalid = true;
 		return;
 	}

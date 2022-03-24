@@ -16,16 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LOG_H
-#define LOG_H
+void game_init( void );
 
-static const char PATH_LOG[] = "log.txt";
-#define LOG_MAX_LEN 128
+void game_run( void );
 
-extern FILE *logfile;
-
-void log_err( const char* );
-
-void log_warn( const char* );
-
-#endif /* LOG_H */
+void game_clear( void );
