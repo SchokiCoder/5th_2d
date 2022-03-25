@@ -16,8 +16,6 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-void game_init( void );
+#include <SDL_render.h>
 
-void game_run( void );
-
-void game_clear( void );
+void game_run( const char *path_world, SDL_Renderer *renderer );

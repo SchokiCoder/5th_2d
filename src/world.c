@@ -61,7 +61,9 @@ void write_world( World *world )
 
 World read_world( const char *world_name )
 {
-	World result;
+	World result = {
+		.invalid = false
+	};
 	FILE *f;
 
 	// open file

@@ -16,7 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <SM_log.h>
+#include <SM_string.h>
+#include <SGUI_sprite.h>
 #include <time.h>
+#include "world.h"
+#include "block.h"
+#include "entity.h"
+#include "player.h"
 #include "game.h"
 
 #ifdef _WIN32
@@ -25,7 +32,6 @@
 # define SLASH "/"
 #endif
 
-/*
 #define PATH_TEXTURES_BLOCKS_DIR PATH_TEXTURES "blocks"
 #define PATH_TEXTURES_ENTITIES_DIR PATH_TEXTURES "entities"
 
@@ -37,21 +43,46 @@ static const char *PATH_TEXTURES_BLOCKS[] = {
 static const char *PATH_TEXTURES_ENTITIES[] = {
 	PATH_TEXTURES_ENTITIES_DIR SLASH "player.png"
 };
-*/
+
 
 float now( void )
 {
 	return (float) clock() / (float) CLOCKS_PER_SEC;
 }
 
-void game_init( void )
-{/*
+void game_run( const char *path_world, SDL_Renderer *renderer )
+{
+	SM_String appendage;
+	SM_String msg = SM_String_new(16);
+	SGUI_Sprite spr_blocks[NUM_BLOCK_TYPES];
+	SGUI_Sprite spr_walls[NUM_BLOCK_TYPES];
+	SGUI_Sprite spr_ents[NUM_ENT_TYPES];
+	World world = {.invalid = false};
+	Player player = {.velocity_x = 0.0f, .velocity_y = 0.0f};
+	SDL_Event event;
+	SDL_Rect temp;
+	const uint8_t *kbd;
+	bool active = true;
+	float ts1, ts2, delta = 0.0f;
+	float x_step = 0.0f;
+	float y_step = 0.0f;
+
 	// open world and check
-	world = read_world(argv[1]);
+	world = read_world(path_world);
 
 	if (world.invalid)
 	{
-		goto main_clear;
+		appendage = SM_String_contain("World ");
+		SM_String_copy(&msg, &appendage);
+
+		appendage = SM_String_contain(path_world);
+		SM_String_append(&msg, &appendage);
+
+		appendage = SM_String_contain(" is corrupt.");
+		SM_String_append(&msg, &appendage);
+
+		SM_log_err(msg.str);
+		goto game_clear;
 	}
 
 	// set player values
@@ -79,7 +110,7 @@ void game_init( void )
 			SM_String_append(&msg, &appendage);
 
 			SM_log_err(msg.str);
-			goto main_clear;
+			goto game_clear;
 		}
 	}
 
@@ -89,6 +120,7 @@ void game_init( void )
     for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
     {
     	// copy block surface, modify, create texture
+    	spr_walls[i].invalid = false;
     	spr_walls[i].surface = SDL_ConvertSurface(spr_blocks[i].surface, spr_blocks[i].surface->format, 0);
 		SDL_SetSurfaceColorMod(spr_walls[i].surface, 175, 175, 175);
     	SGUI_Sprite_create_texture(&spr_walls[i], renderer);
@@ -97,7 +129,7 @@ void game_init( void )
     	if (spr_walls[i].invalid)
     	{
     		SM_log_err("Wall-sprite could not be generated from block-sprite.");
-    		goto main_clear;
+    		goto game_clear;
 		}
     }
 
@@ -120,7 +152,7 @@ void game_init( void )
 			SM_String_append(&msg, &appendage);
 
 			SM_log_err(msg.str);
-			goto main_clear;
+			goto game_clear;
 		}
 	}
 
@@ -136,24 +168,23 @@ void game_init( void )
 
 	// set keyboard state pointer
 	kbd = SDL_GetKeyboardState(NULL);
-*/}
-
-void game_run( void )
-{/*
-	Sprite spr_blocks[NUM_BLOCK_TYPES];
-	Sprite spr_walls[NUM_BLOCK_TYPES];
-	Sprite spr_ents[NUM_ENT_TYPES];
-	World world = {.invalid = false};
-	Player player = {.velocity_x = 0.0f, .velocity_y = 0.0f};
-	const uint8_t *kbd;
-	float ts1, ts2, delta = 0.0f;
-	float x_step = 0.0f;
-	float y_step = 0.0f;
 
 	// mainloop
     while (active)
     {
 		ts1 = now();
+
+		// process events
+		while (SDL_PollEvent(&event))
+		{
+			// app events
+			switch (event.type)
+			{
+			case SDL_QUIT:
+				active = false;
+                break;
+			}
+		}
 
 		// handle keyboard
 		if (kbd[SDL_SCANCODE_A])
@@ -254,10 +285,12 @@ void game_run( void )
 		ts2 = now();
 		delta = ts2 - ts1;
 	}
-*/}
 
-void game_clear( void )
-{/*
+	game_clear:
+
+	//clear strings
+	SM_String_clear(&msg);
+
 	// clear sprites
     for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
     {
@@ -269,4 +302,4 @@ void game_clear( void )
     {
     	SGUI_Sprite_clear(&spr_ents[i]);
 	}
-*/}
+}
