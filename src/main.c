@@ -32,6 +32,8 @@
 #include "motd.h"
 #include "game.h"
 
+static const float MENU_FRAMERATE = 30.0f;
+
 static const SGUI_Theme THEME_MAIN = {
 	.menu_bg_color = {.r = 155, .g = 219, .b = 245, .a = 255},
 
@@ -118,7 +120,7 @@ int main()
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	TTF_Font *font;
-	bool active = true;
+	bool main_active = true;
 	SDL_Event event;
 
 	SGUI_Menu mnu_main;
@@ -242,7 +244,7 @@ int main()
     btn_exit.rect.x = btn_start_game.rect.x;
     btn_exit.rect.y = btn_start_game.rect.y + (btn_start_game.rect.h * 2);
     btn_exit.func_click = btn_exit_click;
-    btn_exit.data_click = &active;
+    btn_exit.data_click = &main_active;
 
     mnu_start_game.rect.x = 100;
     mnu_start_game.rect.y = 100;
@@ -280,7 +282,9 @@ int main()
     btn_chapter1.data_click = &game_data;
 
     // mainloop
-    while (active)
+    float ts_draw, ts_now;
+
+    while (main_active)
     {
 		// process events
 		while (SDL_PollEvent(&event))
@@ -293,16 +297,23 @@ int main()
 			switch (event.type)
 			{
 			case SDL_QUIT:
-				active = false;
+				main_active = false;
                 break;
 			}
 		}
 
-		// draw menus
-		SGUI_Menu_draw(&mnu_main);
-		SGUI_Menu_draw(&mnu_start_game);
+		ts_now = now();
 
-		SDL_RenderPresent(renderer);
+		// draw menus
+		if (ts_now > ts_draw + (1.0f / MENU_FRAMERATE))
+		{
+			SGUI_Menu_draw(&mnu_main);
+			SGUI_Menu_draw(&mnu_start_game);
+
+			SDL_RenderPresent(renderer);
+
+			ts_draw = now();
+		}
     }
 
 	main_clear:

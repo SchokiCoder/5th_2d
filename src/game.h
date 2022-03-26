@@ -18,4 +18,6 @@
 
 #include <SDL_render.h>
 
+float now( void );
+
 void game_run( const char *path_world, SDL_Renderer *renderer );

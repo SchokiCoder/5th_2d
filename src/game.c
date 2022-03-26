@@ -62,7 +62,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 	SDL_Event event;
 	SDL_Rect temp;
 	const uint8_t *kbd;
-	bool active = true;
+	bool game_active = true;
 	float ts1, ts2, delta = 0.0f;
 	float x_step = 0.0f;
 	float y_step = 0.0f;
@@ -170,7 +170,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 	kbd = SDL_GetKeyboardState(NULL);
 
 	// mainloop
-    while (active)
+    while (game_active)
     {
 		ts1 = now();
 
@@ -181,7 +181,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 			switch (event.type)
 			{
 			case SDL_QUIT:
-				active = false;
+				game_active = false;
                 break;
 			}
 		}
