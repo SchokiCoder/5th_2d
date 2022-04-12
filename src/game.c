@@ -19,6 +19,7 @@
 #include <SM_log.h>
 #include <SM_string.h>
 #include <SGUI_sprite.h>
+#include <SGUI_theme.h>
 #include <time.h>
 #include "world.h"
 #include "block.h"
@@ -44,6 +45,33 @@ static const char *PATH_TEXTURES_ENTITIES[] = {
 	PATH_TEXTURES_ENTITIES_DIR SLASH "player.png"
 };
 
+#ifdef _DEBUG
+static const SGUI_Theme THEME_DEBUG = {
+	.menu = {
+		.bg_color = {.r = 155, .g = 219, .b = 245, .a = 0},
+	},
+
+	.label = {
+		.font_color = {.r = 255, .g = 0, .b = 255, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 20},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+	},
+
+    .button = {
+    	.font_color = {.r = 50, .g = 50, .b = 50, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 25},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
+
+    .entry = {
+    	.font_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.bg_color = {.r = 240, .g = 240, .b = 240, .a = 255},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
+};
+#endif
 
 float now( void )
 {
@@ -52,7 +80,17 @@ float now( void )
 
 void game_run( const char *path_world, SDL_Renderer *renderer )
 {
-	SM_String appendage;
+#ifdef _DEBUG
+	TTF_Font *font;
+    SGUI_Menu mnu_debugvals;
+    SGUI_Label lbl_velocity_x;
+    SGUI_Label lbl_velocity_x_val;
+    SGUI_Label lbl_velocity_y;
+    SGUI_Label lbl_velocity_y_val;
+    SGUI_Label lbl_grounded;
+    SGUI_Label lbl_grounded_val;
+#endif
+
 	SM_String msg = SM_String_new(16);
 	SGUI_Sprite spr_blocks[NUM_BLOCK_TYPES];
 	SGUI_Sprite spr_walls[NUM_BLOCK_TYPES];
@@ -72,14 +110,9 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 
 	if (world.invalid)
 	{
-		appendage = SM_String_contain("World ");
-		SM_String_copy(&msg, &appendage);
-
-		appendage = SM_String_contain(path_world);
-		SM_String_append(&msg, &appendage);
-
-		appendage = SM_String_contain(" is corrupt.");
-		SM_String_append(&msg, &appendage);
+		SM_String_copy_cstr(&msg, "World ");
+		SM_String_append_cstr(&msg, path_world);
+		SM_String_append_cstr(&msg, " is corrupt.");
 
 		SM_log_err(msg.str);
 		goto game_clear;
@@ -100,14 +133,9 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 
 		if (spr_blocks[i].invalid)
 		{
-			appendage = SM_String_contain("Sprite ");
-			SM_String_copy(&msg, &appendage);
-
-			appendage = SM_String_contain(PATH_TEXTURES_BLOCKS[i - 1]);
-			SM_String_append(&msg, &appendage);
-
-			appendage = SM_String_contain(" could not be loaded.");
-			SM_String_append(&msg, &appendage);
+			SM_String_copy_cstr(&msg, "Sprite ");
+			SM_String_append_cstr(&msg, PATH_TEXTURES_BLOCKS[i - 1]);
+			SM_String_append_cstr(&msg, " could not be loaded.");
 
 			SM_log_err(msg.str);
 			goto game_clear;
@@ -142,14 +170,9 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 
 		if (spr_ents[i].invalid)
 		{
-			appendage = SM_String_contain("Sprite ");
-			SM_String_copy(&msg, &appendage);
-
-			appendage = SM_String_contain(PATH_TEXTURES_ENTITIES[i - 1]);
-			SM_String_append(&msg, &appendage);
-
-			appendage = SM_String_contain(" could not be loaded.");
-			SM_String_append(&msg, &appendage);
+			SM_String_copy_cstr(&msg, "Sprite ");
+			SM_String_append_cstr(&msg, PATH_TEXTURES_ENTITIES[i - 1]);
+			SM_String_append_cstr(&msg, " could not be loaded.");
 
 			SM_log_err(msg.str);
 			goto game_clear;
@@ -168,6 +191,68 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 
 	// set keyboard state pointer
 	kbd = SDL_GetKeyboardState(NULL);
+
+#ifdef _DEBUG
+	// load font
+    font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 16);
+
+	// make debug values menu
+	mnu_debugvals = SGUI_Menu_new(renderer, THEME_DEBUG.menu);
+    SGUI_Label_new(&lbl_velocity_x, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_velocity_x_val, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_velocity_y, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_velocity_y_val, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_grounded, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_grounded_val, &mnu_debugvals, font, THEME_DEBUG.label);
+
+    // define menu
+    mnu_debugvals.rect.x = 0;
+    mnu_debugvals.rect.y = 0;
+    mnu_debugvals.rect.w = 640;
+    mnu_debugvals.rect.h = 480;
+
+    SM_String_copy_cstr(&lbl_velocity_x.text, "vel_x:");
+    SGUI_Label_update_sprite(&lbl_velocity_x);
+    lbl_velocity_x.rect.w = lbl_velocity_x.sprite.surface->w;
+    lbl_velocity_x.rect.h = lbl_velocity_x.sprite.surface->h;
+    lbl_velocity_x.rect.x = 0;
+    lbl_velocity_x.rect.y = 0;
+
+    SM_String_copy_cstr(&lbl_velocity_x_val.text, "0");
+    SGUI_Label_update_sprite(&lbl_velocity_x_val);
+    lbl_velocity_x_val.rect.w = lbl_velocity_x_val.sprite.surface->w;
+    lbl_velocity_x_val.rect.h = lbl_velocity_x_val.sprite.surface->h;
+    lbl_velocity_x_val.rect.x = lbl_velocity_x.rect.x + lbl_velocity_x.rect.w + 10;
+    lbl_velocity_x_val.rect.y = lbl_velocity_x.rect.y;
+
+    SM_String_copy_cstr(&lbl_velocity_y.text, "vel_y:");
+    SGUI_Label_update_sprite(&lbl_velocity_y);
+    lbl_velocity_y.rect.w = lbl_velocity_y.sprite.surface->w;
+    lbl_velocity_y.rect.h = lbl_velocity_y.sprite.surface->h;
+    lbl_velocity_y.rect.x = lbl_velocity_x.rect.x;
+    lbl_velocity_y.rect.y = lbl_velocity_x.rect.y + lbl_velocity_x.rect.h + 10;
+
+    SM_String_copy_cstr(&lbl_velocity_y_val.text, "0");
+    SGUI_Label_update_sprite(&lbl_velocity_y_val);
+    lbl_velocity_y_val.rect.w = lbl_velocity_y_val.sprite.surface->w;
+    lbl_velocity_y_val.rect.h = lbl_velocity_y_val.sprite.surface->h;
+    lbl_velocity_y_val.rect.x = lbl_velocity_y.rect.x + lbl_velocity_y.rect.w + 10;
+    lbl_velocity_y_val.rect.y = lbl_velocity_y.rect.y;
+
+    SM_String_copy_cstr(&lbl_grounded.text, "grnd:");
+    SGUI_Label_update_sprite(&lbl_grounded);
+    lbl_grounded.rect.w = lbl_grounded.sprite.surface->w;
+    lbl_grounded.rect.h = lbl_grounded.sprite.surface->h;
+    lbl_grounded.rect.x = lbl_velocity_x.rect.x;
+    lbl_grounded.rect.y = lbl_velocity_y_val.rect.y + lbl_velocity_y_val.rect.h + 10;
+
+    SM_String_copy_cstr(&lbl_grounded_val.text, "0");
+    SGUI_Label_update_sprite(&lbl_grounded_val);
+    lbl_grounded_val.rect.w = lbl_grounded_val.sprite.surface->w;
+    lbl_grounded_val.rect.h = lbl_grounded_val.sprite.surface->h;
+    lbl_grounded_val.rect.x = lbl_grounded.rect.x + lbl_grounded.rect.w + 10;
+    lbl_grounded_val.rect.y = lbl_grounded.rect.y;
+#endif
 
 	// mainloop
     while (game_active)
@@ -227,6 +312,26 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 		move_player_x(&player, x_step, &world);
 		move_player_y(&player, y_step, &world);
 
+#ifdef _DEBUG
+        sprintf(lbl_velocity_x_val.text.str, "%f", player.velocity_x);
+        lbl_velocity_x_val.text.len = strlen(lbl_velocity_x_val.text.str);
+        SGUI_Label_update_sprite(&lbl_velocity_x_val);
+        lbl_velocity_x_val.rect.w = lbl_velocity_x_val.sprite.surface->w;
+        lbl_velocity_x_val.rect.h = lbl_velocity_x_val.sprite.surface->h;
+
+        sprintf(lbl_velocity_y_val.text.str, "%f", player.velocity_y);
+        lbl_velocity_y_val.text.len = strlen(lbl_velocity_y_val.text.str);
+        SGUI_Label_update_sprite(&lbl_velocity_y_val);
+        lbl_velocity_y_val.rect.w = lbl_velocity_y_val.sprite.surface->w;
+        lbl_velocity_y_val.rect.h = lbl_velocity_y_val.sprite.surface->h;
+
+        sprintf(lbl_grounded_val.text.str, "%i", player.grounded);
+        lbl_grounded_val.text.len = strlen(lbl_grounded_val.text.str);
+        SGUI_Label_update_sprite(&lbl_grounded_val);
+        lbl_grounded_val.rect.w = lbl_grounded_val.sprite.surface->w;
+        lbl_grounded_val.rect.h = lbl_grounded_val.sprite.surface->h;
+#endif
+
 		// draw background
     	SDL_SetRenderDrawColor(renderer, 155, 219, 245, 255);
     	SDL_RenderClear(renderer);
@@ -277,6 +382,15 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 			spr_ents[E_PLAYER].texture,
 			NULL,
 			&temp);
+
+#ifdef _DEBUG
+		// and optical collision box (not actual hitbox)
+		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+		SDL_RenderDrawRect(renderer, &player.box);
+
+		// draw debug menu
+		SGUI_Menu_draw(&mnu_debugvals);
+#endif
 
 		// show drawn image
 		SDL_RenderPresent(renderer);

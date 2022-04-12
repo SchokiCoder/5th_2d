@@ -30,14 +30,18 @@ static const float PLAYER_WALKING_FRICTION = 4.0f;
 static const float GRAVITY = (float) BLOCK_SIZE * 18;
 static const float PLAYER_JUMP_VELOCITY = (float) BLOCK_SIZE * 12;
 
-typedef struct Rect
+typedef struct FRect
 {
 	float x, y, w, h;
-} Rect ;
+} FRect ;
 
 typedef struct Player
 {
-    Rect rect;
+#ifdef _DEBUG
+    SDL_Rect box;	// optical box in which collision checks with blocks happen
+#endif
+
+    FRect rect;		// actual hitbox
     float velocity_x, velocity_y;
     bool grounded;
 } Player ;

@@ -40,6 +40,14 @@ bool move_player( Player *player, float *player_pos, float *player_velocity, flo
 	x2 = (player->rect.x + player->rect.w) / BLOCK_SIZE + 1;
 	y2 = (player->rect.y + player->rect.h) / BLOCK_SIZE + 1;
 
+#ifdef _DEBUG
+	// update check box
+	player->box.x = x1 * BLOCK_SIZE;
+	player->box.y = y1 * BLOCK_SIZE;
+	player->box.w = (x2 * BLOCK_SIZE) - player->box.x;
+	player->box.h = (y2 * BLOCK_SIZE) - player->box.y;
+#endif
+
 	// check if within bounds
 	if (x1 < 0)
 		x1 = 0;

@@ -35,39 +35,55 @@
 static const float MENU_FRAMERATE = 30.0f;
 
 static const SGUI_Theme THEME_MAIN = {
-	.menu_bg_color = {.r = 155, .g = 219, .b = 245, .a = 255},
+	.menu = {
+		.bg_color = {.r = 155, .g = 219, .b = 245, .a = 255},
+	},
 
-	.label_font_color = {.r = 50, .g = 50, .b = 200, .a = 255},
-    .label_bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
-    .label_border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+	.label = {
+		.font_color = {.r = 50, .g = 50, .b = 200, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+	},
 
-    .button_font_color = {.r = 50, .g = 50, .b = 50, .a = 255},
-    .button_bg_color = {.r = 0, .g = 0, .b = 0, .a = 25},
-    .button_border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
-    .button_disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+    .button = {
+    	.font_color = {.r = 50, .g = 50, .b = 50, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 25},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
 
-    .entry_font_color = {.r = 0, .g = 0, .b = 0, .a = 255},
-    .entry_bg_color = {.r = 240, .g = 240, .b = 240, .a = 255},
-    .entry_border_color = {.r = 0, .g = 0, .b = 0, .a = 255},
-    .entry_disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50}
+    .entry = {
+    	.font_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.bg_color = {.r = 240, .g = 240, .b = 240, .a = 255},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
 };
 
 static const SGUI_Theme THEME_WINDOW = {
-	.menu_bg_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	.menu = {
+		.bg_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
 
-	.label_font_color = {.r = 50, .g = 50, .b = 200, .a = 255},
-    .label_bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
-    .label_border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+	.label = {
+		.font_color = {.r = 50, .g = 50, .b = 200, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+	},
 
-    .button_font_color = {.r = 20, .g = 255, .b = 20, .a = 255},
-    .button_bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
-    .button_border_color = {.r = 255, .g = 255, .b = 255, .a = 20},
-    .button_disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+    .button = {
+    	.font_color = {.r = 20, .g = 255, .b = 20, .a = 255},
+    	.bg_color = {.r = 0, .g = 0, .b = 0, .a = 0},
+    	.border_color = {.r = 255, .g = 255, .b = 255, .a = 20},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
 
-    .entry_font_color = {.r = 0, .g = 0, .b = 0, .a = 255},
-    .entry_bg_color = {.r = 240, .g = 240, .b = 240, .a = 255},
-    .entry_border_color = {.r = 0, .g = 0, .b = 0, .a = 255},
-    .entry_disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50}
+    .entry = {
+    	.font_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.bg_color = {.r = 240, .g = 240, .b = 240, .a = 255},
+    	.border_color = {.r = 0, .g = 0, .b = 0, .a = 255},
+    	.disabled_color = {.r = 0, .g = 0, .b = 0, .a = 50},
+	},
 };
 
 struct MenuPointers
@@ -115,7 +131,6 @@ void btn_chapter1_click( void *ptr )
 int main()
 {
 	SM_String window_title = SM_String_new(64);
-	SM_String appendage;
 	SM_String msg = SM_String_new(16);
 	SDL_Window *window;
 	SDL_Renderer *renderer;
@@ -168,14 +183,9 @@ int main()
     font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 16);
 
     // create window title
-    appendage = SM_String_contain(APP_NAME);
-    SM_String_copy(&window_title, &appendage);
-
-    appendage = SM_String_contain(": ");
-    SM_String_append(&window_title, &appendage);
-
-    appendage = SM_String_contain(MOTDS[rand() % (sizeof(MOTDS) / sizeof(MOTDS[0]))]);
-    SM_String_append(&window_title, &appendage);
+    SM_String_copy_cstr(&window_title, APP_NAME);
+    SM_String_append_cstr(&window_title, ": ");
+    SM_String_append_cstr(&window_title, MOTDS[rand() % (sizeof(MOTDS) / sizeof(MOTDS[0]))]);
 
     // create window and renderer
     window = SDL_CreateWindow(
@@ -202,15 +212,15 @@ int main()
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // make menus
-    mnu_main = SGUI_Menu_new(renderer, font, &THEME_MAIN);
-    SGUI_Label_new(&lbl_main, &mnu_main, &THEME_MAIN);
-    SGUI_Button_new(&btn_start_game, &mnu_main, &THEME_MAIN);
-    SGUI_Button_new(&btn_exit, &mnu_main, &THEME_MAIN);
+    mnu_main = SGUI_Menu_new(renderer, THEME_MAIN.menu);
+    SGUI_Label_new(&lbl_main, &mnu_main, font, THEME_MAIN.label);
+    SGUI_Button_new(&btn_start_game, &mnu_main, font, THEME_MAIN.button);
+    SGUI_Button_new(&btn_exit, &mnu_main, font, THEME_MAIN.button);
 
-    mnu_start_game = SGUI_Menu_new(renderer, font, &THEME_WINDOW);
-    SGUI_Button_new(&btn_start_game_close, &mnu_start_game, &THEME_WINDOW);
-    SGUI_Label_new(&lbl_start_game, &mnu_start_game, &THEME_WINDOW);
-    SGUI_Button_new(&btn_chapter1, &mnu_start_game, &THEME_WINDOW);
+    mnu_start_game = SGUI_Menu_new(renderer, THEME_WINDOW.menu);
+    SGUI_Button_new(&btn_start_game_close, &mnu_start_game, font, THEME_WINDOW.button);
+    SGUI_Label_new(&lbl_start_game, &mnu_start_game, font, THEME_WINDOW.label);
+    SGUI_Button_new(&btn_chapter1, &mnu_start_game, font, THEME_WINDOW.button);
 
     // define menus
     mnu_main.rect.x = 0;
@@ -218,16 +228,14 @@ int main()
     mnu_main.rect.w = 640;
     mnu_main.rect.h = 480;
 
-    appendage = SM_String_contain(APP_NAME);
-    SM_String_copy(&lbl_main.text, &appendage);
+    SM_String_copy_cstr(&lbl_main.text, APP_NAME);
     SGUI_Label_update_sprite(&lbl_main);
     lbl_main.rect.w = lbl_main.sprite.surface->w;
     lbl_main.rect.h = lbl_main.sprite.surface->h;
     lbl_main.rect.x = 50;
     lbl_main.rect.y = 200;
 
-    appendage = SM_String_contain("Start game");
-    SM_String_copy(&btn_start_game.text, &appendage);
+    SM_String_copy_cstr(&btn_start_game.text, "Start game");
     SGUI_Button_update_sprite(&btn_start_game);
     btn_start_game.rect.w = btn_start_game.sprite.surface->w;
     btn_start_game.rect.h = btn_start_game.sprite.surface->h;
@@ -236,8 +244,7 @@ int main()
     btn_start_game.func_click = btn_start_game_click;
     btn_start_game.data_click = &menu_pointers;
 
-    appendage = SM_String_contain("Exit");
-    SM_String_copy(&btn_exit.text, &appendage);
+    SM_String_copy_cstr(&btn_exit.text, "Exit");
     SGUI_Button_update_sprite(&btn_exit);
     btn_exit.rect.w = btn_exit.sprite.surface->w;
     btn_exit.rect.h = btn_exit.sprite.surface->h;
@@ -252,8 +259,7 @@ int main()
     mnu_start_game.rect.h = 200;
     mnu_start_game.visible = false;
 
-    appendage = SM_String_contain("x");
-    SM_String_copy(&btn_start_game_close.text, &appendage);
+    SM_String_copy_cstr(&btn_start_game_close.text, "x");
     SGUI_Button_update_sprite(&btn_start_game_close);
     btn_start_game_close.rect.w = btn_start_game_close.sprite.surface->w;
     btn_start_game_close.rect.h = btn_start_game_close.sprite.surface->h;
@@ -263,16 +269,14 @@ int main()
     btn_start_game_close.func_click = btn_start_game_close_click;
     btn_start_game_close.data_click = &menu_pointers;
 
-    appendage = SM_String_contain("Select a chapter");
-    SM_String_copy(&lbl_start_game.text, &appendage);
+    SM_String_copy_cstr(&lbl_start_game.text, "Select a chapter");
     SGUI_Label_update_sprite(&lbl_start_game);
     lbl_start_game.rect.w = lbl_start_game.sprite.surface->w;
     lbl_start_game.rect.h = lbl_start_game.sprite.surface->h;
     lbl_start_game.rect.x = mnu_start_game.rect.x;
     lbl_start_game.rect.y = mnu_start_game.rect.y;
 
-    appendage = SM_String_contain("test");
-    SM_String_copy(&btn_chapter1.text, &appendage);
+    SM_String_copy_cstr(&btn_chapter1.text, "test");
     SGUI_Button_update_sprite(&btn_chapter1);
     btn_chapter1.rect.w = btn_chapter1.sprite.surface->w;
     btn_chapter1.rect.h = btn_chapter1.sprite.surface->h;
@@ -290,8 +294,8 @@ int main()
 		while (SDL_PollEvent(&event))
 		{
 			// menu events
-			SGUI_Menu_handle_events(&mnu_main, &event);
-			SGUI_Menu_handle_events(&mnu_start_game, &event);
+			SGUI_Menu_handle_event(&mnu_main, &event);
+			SGUI_Menu_handle_event(&mnu_start_game, &event);
 
 			// app events
 			switch (event.type)
