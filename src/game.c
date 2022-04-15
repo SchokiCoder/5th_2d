@@ -87,6 +87,10 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
     SGUI_Label lbl_velocity_x_val;
     SGUI_Label lbl_velocity_y;
     SGUI_Label lbl_velocity_y_val;
+    SGUI_Label lbl_pos_x;
+    SGUI_Label lbl_pos_x_val;
+    SGUI_Label lbl_pos_y;
+    SGUI_Label lbl_pos_y_val;
     SGUI_Label lbl_grounded;
     SGUI_Label lbl_grounded_val;
 #endif
@@ -202,6 +206,10 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
     SGUI_Label_new(&lbl_velocity_x_val, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_velocity_y, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_velocity_y_val, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_pos_x, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_pos_x_val, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_pos_y, &mnu_debugvals, font, THEME_DEBUG.label);
+    SGUI_Label_new(&lbl_pos_y_val, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_grounded, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_grounded_val, &mnu_debugvals, font, THEME_DEBUG.label);
 
@@ -239,12 +247,40 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
     lbl_velocity_y_val.rect.x = lbl_velocity_y.rect.x + lbl_velocity_y.rect.w + 10;
     lbl_velocity_y_val.rect.y = lbl_velocity_y.rect.y;
 
+	SM_String_copy_cstr(&lbl_pos_x.text, "pos_x:");
+    SGUI_Label_update_sprite(&lbl_pos_x);
+    lbl_pos_x.rect.w = lbl_pos_x.sprite.surface->w;
+    lbl_pos_x.rect.h = lbl_pos_x.sprite.surface->h;
+    lbl_pos_x.rect.x = lbl_velocity_x.rect.x;
+    lbl_pos_x.rect.y = lbl_velocity_y_val.rect.y + lbl_velocity_y_val.rect.h + 10;
+
+    SM_String_copy_cstr(&lbl_pos_x_val.text, "0");
+    SGUI_Label_update_sprite(&lbl_pos_x_val);
+    lbl_pos_x_val.rect.w = lbl_pos_x_val.sprite.surface->w;
+    lbl_pos_x_val.rect.h = lbl_pos_x_val.sprite.surface->h;
+    lbl_pos_x_val.rect.x = lbl_pos_x.rect.x + lbl_pos_x.rect.w + 10;
+    lbl_pos_x_val.rect.y = lbl_pos_x.rect.y;
+
+    SM_String_copy_cstr(&lbl_pos_y.text, "pos_y:");
+    SGUI_Label_update_sprite(&lbl_pos_y);
+    lbl_pos_y.rect.w = lbl_pos_y.sprite.surface->w;
+    lbl_pos_y.rect.h = lbl_pos_y.sprite.surface->h;
+    lbl_pos_y.rect.x = lbl_velocity_x.rect.x;
+    lbl_pos_y.rect.y = lbl_pos_x_val.rect.y + lbl_pos_x_val.rect.h + 10;
+
+    SM_String_copy_cstr(&lbl_pos_y_val.text, "0");
+    SGUI_Label_update_sprite(&lbl_pos_y_val);
+    lbl_pos_y_val.rect.w = lbl_pos_y_val.sprite.surface->w;
+    lbl_pos_y_val.rect.h = lbl_pos_y_val.sprite.surface->h;
+    lbl_pos_y_val.rect.x = lbl_pos_x.rect.x + lbl_pos_x.rect.w + 10;
+    lbl_pos_y_val.rect.y = lbl_pos_y.rect.y;
+
     SM_String_copy_cstr(&lbl_grounded.text, "grnd:");
     SGUI_Label_update_sprite(&lbl_grounded);
     lbl_grounded.rect.w = lbl_grounded.sprite.surface->w;
     lbl_grounded.rect.h = lbl_grounded.sprite.surface->h;
     lbl_grounded.rect.x = lbl_velocity_x.rect.x;
-    lbl_grounded.rect.y = lbl_velocity_y_val.rect.y + lbl_velocity_y_val.rect.h + 10;
+    lbl_grounded.rect.y = lbl_pos_y_val.rect.y + lbl_pos_y_val.rect.h + 10;
 
     SM_String_copy_cstr(&lbl_grounded_val.text, "0");
     SGUI_Label_update_sprite(&lbl_grounded_val);
@@ -291,9 +327,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 		if (kbd[SDL_SCANCODE_SPACE])
 		{
 			if (player.grounded)
-			{
 				player.velocity_y -= PLAYER_JUMP_VELOCITY;
-			}
 		}
 
 		// gravity
@@ -302,7 +336,10 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 		// walking friction
 		if (player.grounded)
 		{
-			player.velocity_x -= (player.velocity_x * PLAYER_WALKING_FRICTION * delta);
+			if (player.velocity_x > 0.0f)
+				player.velocity_x -= PLAYER_WALKING_FRICTION * delta;
+			else if (player.velocity_x < 0.0f)
+				player.velocity_x += PLAYER_WALKING_FRICTION * delta;
 		}
 
 		// movement proccessing
@@ -320,10 +357,23 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
         lbl_velocity_x_val.rect.h = lbl_velocity_x_val.sprite.surface->h;
 
         sprintf(lbl_velocity_y_val.text.str, "%f", player.velocity_y);
+        sprintf(lbl_velocity_y_val.text.str, "%f", player.rect.y);
         lbl_velocity_y_val.text.len = strlen(lbl_velocity_y_val.text.str);
         SGUI_Label_update_sprite(&lbl_velocity_y_val);
         lbl_velocity_y_val.rect.w = lbl_velocity_y_val.sprite.surface->w;
         lbl_velocity_y_val.rect.h = lbl_velocity_y_val.sprite.surface->h;
+
+        sprintf(lbl_pos_x_val.text.str, "%f", player.rect.x);
+        lbl_pos_x_val.text.len = strlen(lbl_pos_x_val.text.str);
+        SGUI_Label_update_sprite(&lbl_pos_x_val);
+        lbl_pos_x_val.rect.w = lbl_pos_x_val.sprite.surface->w;
+        lbl_pos_x_val.rect.h = lbl_pos_x_val.sprite.surface->h;
+
+        sprintf(lbl_pos_y_val.text.str, "%f", player.rect.y);
+        lbl_pos_y_val.text.len = strlen(lbl_pos_y_val.text.str);
+        SGUI_Label_update_sprite(&lbl_pos_y_val);
+        lbl_pos_y_val.rect.w = lbl_pos_y_val.sprite.surface->w;
+        lbl_pos_y_val.rect.h = lbl_pos_y_val.sprite.surface->h;
 
         sprintf(lbl_grounded_val.text.str, "%i", player.grounded);
         lbl_grounded_val.text.len = strlen(lbl_grounded_val.text.str);
@@ -402,7 +452,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 
 	game_clear:
 
-	//clear strings
+	// clear strings
 	SM_String_clear(&msg);
 
 	// clear sprites

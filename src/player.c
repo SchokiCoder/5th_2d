@@ -19,17 +19,96 @@
 #include "world.h"
 #include "player.h"
 
+typedef struct FPoint
+{
+	float x, y;
+} FPoint ;
+
+bool point_within_box( FPoint *pt, FRect *box )
+{
+    if (pt->x > box->x && pt->x < (box->x + box->w) &&
+    	pt->y > box->y && pt->y < (box->y + box->h)) {
+		return true;
+	}
+
+	return false;
+}
+
+bool box_within_box( FRect *box_1, FRect *box_2 )
+{
+    //SDL_Point pt;
+    FPoint pt;
+
+    // is box 1 within box 2
+    pt.x = box_1->x;
+    pt.y = box_1->y;
+
+    if (point_within_box(&pt, box_2)) {
+    	return true;
+	}
+
+	pt.x = box_1->x + box_1->w;
+    pt.y = box_1->y;
+
+    if (point_within_box(&pt, box_2)) {
+    	return true;
+	}
+
+	pt.x = box_1->x;
+    pt.y = box_1->y + box_1->h;
+
+    if (point_within_box(&pt, box_2)) {
+    	return true;
+	}
+
+	pt.x = box_1->x + box_1->w;
+    pt.y = box_1->y + box_1->h;
+
+    if (point_within_box(&pt, box_2)) {
+    	return true;
+	}
+
+	// is box 2 within box 1
+	pt.x = box_2->x;
+    pt.y = box_2->y;
+
+    if (point_within_box(&pt, box_1)) {
+    	return true;
+	}
+
+	pt.x = box_2->x + box_1->w;
+    pt.y = box_2->y;
+
+    if (point_within_box(&pt, box_1)) {
+    	return true;
+	}
+
+	pt.x = box_2->x;
+    pt.y = box_2->y + box_1->h;
+
+    if (point_within_box(&pt, box_1)) {
+    	return true;
+	}
+
+	pt.x = box_2->x + box_1->w;
+    pt.y = box_2->y + box_1->h;
+
+    if (point_within_box(&pt, box_1)) {
+    	return true;
+	}
+
+    return false;
+}
+
 /*
 	player_pos: 		player.rect.x or y
 	player_velocity:	player.velocity_x or y
 */
 bool move_player( Player *player, float *player_pos, float *player_velocity, float distance, World *world )
 {
-	bool result = false;
-	int32_t x1, y1, x2, y2;
-	SDL_Rect player_hitbox;
-	SDL_Rect block_hitbox;
-	SDL_Rect dummy;
+	bool collision = false;
+	int_fast32_t x1, y1, x2, y2;
+	FRect block_hitbox;
 
 	// set position
 	*player_pos += distance;
@@ -74,37 +153,32 @@ bool move_player( Player *player, float *player_pos, float *player_velocity, flo
 		y2 = WORLD_MAX_HEIGHT - 1;
 
 	// collision check for nearby blocks
-	player_hitbox.x = (int32_t) player->rect.x;
-	player_hitbox.y = (int32_t) player->rect.y;
-	player_hitbox.w = (int32_t) player->rect.w;
-	player_hitbox.h = (int32_t) player->rect.h;
-
 	block_hitbox.w = BLOCK_SIZE;
 	block_hitbox.h = BLOCK_SIZE;
 
-	for (; x1 < x2; x1++)
+	for (int_fast32_t x = x1; x <= x2; x++)
 	{
-		for (; y1 < y2; y1++)
+		for (int_fast32_t y = y1; y <= y2; y++)
 		{
 			// if non-solid block here, skip
-			if (world->blocks[x1][y1] == B_NONE)
+			if (world->blocks[x][y] == B_NONE)
 				continue;
 
-			block_hitbox.x = x1 * BLOCK_SIZE;
-			block_hitbox.y = y1 * BLOCK_SIZE;
+			block_hitbox.x = x * BLOCK_SIZE;
+			block_hitbox.y = y * BLOCK_SIZE;
 
 			// if collision
-			if (SDL_IntersectRect(&player_hitbox, &block_hitbox, &dummy))
+			if (box_within_box(&player->rect, &block_hitbox))
 			{
 				// flag, reset pos, kill velocity
-				result = true;
+				collision = true;
 				*player_pos -= distance;
 				*player_velocity = 0.0f;
 			}
 		}
 	}
 
-	return result;
+	return collision;
 }
 
 void move_player_x( Player *player, float x_distance, World *world )

@@ -23,12 +23,12 @@
 #include <stdbool.h>
 #include "block.h"
 
-// movement values (per second)
-static const float PLAYER_ACCELERATION = (float) BLOCK_SIZE * 12.0;
-static const float PLAYER_MAX_VELOCITY = (float) BLOCK_SIZE * 6.0;
-static const float PLAYER_WALKING_FRICTION = 4.0f;
-static const float GRAVITY = (float) BLOCK_SIZE * 18;
-static const float PLAYER_JUMP_VELOCITY = (float) BLOCK_SIZE * 12;
+// movement values
+static const float PLAYER_ACCELERATION = (float) BLOCK_SIZE * 12.0f;
+static const float PLAYER_MAX_VELOCITY = (float) BLOCK_SIZE * 6.0f;
+static const float PLAYER_WALKING_FRICTION = PLAYER_ACCELERATION / 2.0f;
+static const float GRAVITY = (float) BLOCK_SIZE * 18.0f;
+static const float PLAYER_JUMP_VELOCITY = (float) BLOCK_SIZE * 12.0f;
 
 typedef struct FRect
 {
@@ -46,7 +46,8 @@ typedef struct Player
     bool grounded;
 } Player ;
 
-void move_player_x( Player*, float, World* );
-void move_player_y( Player*, float, World* );
+void move_player_x( Player *player, float x_distance, World *world );
+
+void move_player_y( Player *player, float y_distance, World *world );
 
 #endif /* PLAYER_H */
