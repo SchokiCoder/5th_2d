@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-static const char MOTDS[][64] = {
+static const char *MOTDS[] = {
 	"5th Revision",
 	"my oldest project",
 	"Striitit!",
@@ -34,5 +34,6 @@ static const char MOTDS[][64] = {
 	"33% Red, 33% Green, 33% Blue, 1% Unknown",
 	"Oktoberfest!",
 	"Advertiser friendly.",
-	"i guess"
+	"i guess",
+	"seventy meters"
 };

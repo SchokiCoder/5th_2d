@@ -24,9 +24,9 @@ static const char APP_LICENSE[] = "GPLv3";
 static const char APP_LICENSE_NOTICE[] =
 	"You should have received a copy of the GNU General Public License\n" \
 	"along with this program.  If not, see <https://www.gnu.org/licenses/>.\n";
-static const char APP_SOURCE[] = "https://github.com/SchokiCoder/smng";
+static const char APP_SOURCE[] = "https://github.com/SchokiCoder/chemarium.git";
 #define APP_MAJOR 0
 #define APP_MINOR 2
-#define APP_PATCH 1
+#define APP_PATCH 2
 
 #endif /* APP_H */

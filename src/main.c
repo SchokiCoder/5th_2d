@@ -113,6 +113,18 @@ void btn_exit_click( void *ptr )
 	*active = false;
 }
 
+void btn_version_click( )
+{
+	printf(
+		"%s %u.%u.%u is licensed under the %s.\n" \
+		"%s" \
+		"The source code of this program is available at\n" \
+		"%s\n",
+		APP_NAME, APP_MAJOR, APP_MINOR, APP_PATCH, APP_LICENSE,
+		APP_LICENSE_NOTICE,
+		APP_SOURCE);
+}
+
 void btn_start_game_close_click( void *ptr )
 {
 	struct MenuPointers *data = (struct MenuPointers*) ptr;
@@ -142,6 +154,7 @@ int main()
 	SGUI_Label lbl_main;
 	SGUI_Button btn_start_game;
 	SGUI_Button btn_exit;
+	SGUI_Button btn_version;
 
 	SGUI_Menu mnu_start_game;
 	SGUI_Button btn_start_game_close;
@@ -216,6 +229,7 @@ int main()
     SGUI_Label_new(&lbl_main, &mnu_main, font, THEME_MAIN.label);
     SGUI_Button_new(&btn_start_game, &mnu_main, font, THEME_MAIN.button);
     SGUI_Button_new(&btn_exit, &mnu_main, font, THEME_MAIN.button);
+    SGUI_Button_new(&btn_version, &mnu_main, font, THEME_MAIN.button);
 
     mnu_start_game = SGUI_Menu_new(renderer, THEME_WINDOW.menu);
     SGUI_Button_new(&btn_start_game_close, &mnu_start_game, font, THEME_WINDOW.button);
@@ -252,6 +266,15 @@ int main()
     btn_exit.rect.y = btn_start_game.rect.y + (btn_start_game.rect.h * 2);
     btn_exit.func_click = btn_exit_click;
     btn_exit.data_click = &main_active;
+
+    sprintf(btn_version.text.str, "%u.%u.%u", APP_MAJOR, APP_MINOR, APP_PATCH);
+    btn_version.text.len = strlen(btn_version.text.str);
+    SGUI_Button_update_sprite(&btn_version);
+    btn_version.rect.w = btn_version.sprite.surface->w;
+    btn_version.rect.h = btn_version.sprite.surface->h;
+    btn_version.rect.x = 640 - btn_version.rect.w - 5;
+    btn_version.rect.y = 480 - btn_version.rect.h - 5;
+    btn_version.func_click = btn_version_click;
 
     mnu_start_game.rect.x = 100;
     mnu_start_game.rect.y = 100;

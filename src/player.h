@@ -24,6 +24,7 @@
 #include "block.h"
 
 // movement values
+static const float PLAYER_VELOCITY_THRESHOLD = 0.01f;
 static const float PLAYER_ACCELERATION = (float) BLOCK_SIZE * 12.0f;
 static const float PLAYER_MAX_VELOCITY = (float) BLOCK_SIZE * 6.0f;
 static const float PLAYER_WALKING_FRICTION = PLAYER_ACCELERATION / 2.0f;

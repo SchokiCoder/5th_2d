@@ -333,21 +333,31 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 		// gravity
 		player.velocity_y += GRAVITY * delta;
 
-		// walking friction
+		// apply walking friction or stop at velocity threshold
 		if (player.grounded)
 		{
-			if (player.velocity_x > 0.0f)
+			if (player.velocity_x > PLAYER_VELOCITY_THRESHOLD)
 				player.velocity_x -= PLAYER_WALKING_FRICTION * delta;
-			else if (player.velocity_x < 0.0f)
+
+			else if (player.velocity_x < (PLAYER_VELOCITY_THRESHOLD * -1.0f))
 				player.velocity_x += PLAYER_WALKING_FRICTION * delta;
+
+			else
+				player.velocity_x = 0.0f;
 		}
 
 		// movement proccessing
-		x_step = player.velocity_x * delta;
-		y_step = player.velocity_y * delta;
+		if (player.velocity_x != 0.0f)
+		{
+			x_step = player.velocity_x * delta;
+			move_player_x(&player, x_step, &world);
+		}
 
-		move_player_x(&player, x_step, &world);
-		move_player_y(&player, y_step, &world);
+		if (player.velocity_y != 0.0f)
+		{
+			y_step = player.velocity_y * delta;
+			move_player_y(&player, y_step, &world);
+		}
 
 #ifdef _DEBUG
         sprintf(lbl_velocity_x_val.text.str, "%f", player.velocity_x);
