@@ -21,15 +21,14 @@
 
 #include <stdint.h>
 
-#define NUM_BLOCK_TYPES 3
-
 static const uint32_t BLOCK_SIZE = 32;
 
-enum Block
+typedef enum Block
 {
 	B_NONE,
 	B_DIRT,
 	B_STONE
-};
+} Block ;
+#define NUM_BLOCK_TYPES 3
 
 #endif /* BLOCK_H */

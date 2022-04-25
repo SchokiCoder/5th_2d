@@ -131,26 +131,26 @@ bool move_player( Player *player, float *player_pos, float *player_velocity, flo
 	if (x1 < 0)
 		x1 = 0;
 
-	if (x1 > WORLD_MAX_WIDTH - 1)
-		x1 = WORLD_MAX_WIDTH - 1;
+	if (x1 > (int_fast32_t) world->width - 1)
+		x1 = (int_fast32_t) world->width - 1;
 
 	if (y1 < 0)
 		y1 = 0;
 
-	if (y1 > WORLD_MAX_HEIGHT - 1)
-		y1 = WORLD_MAX_HEIGHT - 1;
+	if (y1 > (int_fast32_t) world->height - 1)
+		y1 = (int_fast32_t) world->height - 1;
 
 	if (x2 < 0)
 		x2 = 0;
 
-	if (x2 > WORLD_MAX_WIDTH - 1)
-		x2 = WORLD_MAX_WIDTH - 1;
+	if (x2 > (int_fast32_t) world->width - 1)
+		x2 = (int_fast32_t) world->width - 1;
 
 	if (y2 < 0)
 		y2 = 0;
 
-	if (y2 > WORLD_MAX_HEIGHT - 1)
-		y2 = WORLD_MAX_HEIGHT - 1;
+	if (y2 > (int_fast32_t) world->height - 1)
+		y2 = (int_fast32_t) world->height - 1;
 
 	// collision check for nearby blocks
 	block_hitbox.w = BLOCK_SIZE;

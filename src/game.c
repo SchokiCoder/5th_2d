@@ -78,7 +78,7 @@ float now( void )
 	return (float) clock() / (float) CLOCKS_PER_SEC;
 }
 
-void game_run( const char *path_world, SDL_Renderer *renderer )
+void game_run( const char *world_name, SDL_Renderer *renderer )
 {
 #ifdef _DEBUG
 	TTF_Font *font;
@@ -110,12 +110,12 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 	float y_step = 0.0f;
 
 	// open world and check
-	world = read_world(path_world);
+	world = World_from_file(world_name);
 
 	if (world.invalid)
 	{
 		SM_String_copy_cstr(&msg, "World ");
-		SM_String_append_cstr(&msg, path_world);
+		SM_String_append_cstr(&msg, world_name);
 		SM_String_append_cstr(&msg, " is corrupt.");
 
 		SM_log_err(msg.str);
@@ -184,9 +184,9 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
 	}
 
     // map textures
-    for (uint_fast32_t x = 0; x < WORLD_MAX_WIDTH; x++)
+    for (uint_fast32_t x = 0; x < world.width; x++)
     {
-    	for (uint_fast32_t y = 0; y < WORLD_MAX_HEIGHT; y++)
+    	for (uint_fast32_t y = 0; y < world.height; y++)
     	{
             world.block_textures[x][y] = spr_blocks[world.blocks[x][y]].texture;
             world.wall_textures[x][y] = spr_walls[world.walls[x][y]].texture;
@@ -397,9 +397,9 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
     	SDL_RenderClear(renderer);
 
 		// draw walls and blocks
-		for (uint_fast32_t x = 0; x < WORLD_MAX_WIDTH; x++)
+		for (uint_fast32_t x = 0; x < world.width; x++)
 		{
-    		for (uint_fast32_t y = 0; y < WORLD_MAX_HEIGHT; y++)
+    		for (uint_fast32_t y = 0; y < world.height; y++)
     		{
 				temp.x = x * BLOCK_SIZE;
 				temp.y = y * BLOCK_SIZE;
@@ -476,4 +476,7 @@ void game_run( const char *path_world, SDL_Renderer *renderer )
     {
     	SGUI_Sprite_clear(&spr_ents[i]);
 	}
+
+	// clear world
+	World_clear(&world);
 }

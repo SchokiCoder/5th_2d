@@ -16,8 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef GAME_H
+#define GAME_H
+
 #include <SDL_render.h>
 
 float now( void );
 
 void game_run( const char *path_world, SDL_Renderer *renderer );
+
+#endif

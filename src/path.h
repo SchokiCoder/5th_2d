@@ -16,34 +16,29 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef PATH_H
+#define PATH_H
 
-#include <stdbool.h>
-#include "entity.h"
+#include <stdint.h>
+#include <SM_string.h>
 
-#define WORLD_NAME_MAX_LEN 64
-#define WORLD_MAX_ENTITIES 16
+#ifdef _WIN32
+	static const char SLASH[] = "\\";
+#else
+	static const char SLASH[] = "/";
+#endif /* _WIN32 */
 
-typedef struct World
-{
-	bool invalid;
-	char world_name[WORLD_NAME_MAX_LEN];
-	size_t width;
-	size_t height;
-    Block **blocks;					// actual terrain
-    Block **walls;						// background terrain
-    Entity entities[WORLD_MAX_ENTITIES];
-    SDL_Texture ***block_textures;
-    SDL_Texture ***wall_textures;
-} World ;
+static const char PATH_WORLDS[] = "worlds";
+static const char PATH_CONFIG[] = "config.cfg";
+static const char PATH_TEXTURE_ICON[] =	PATH_TEXTURES "icon.png";
 
-World World_new( const char *world_name, const size_t width, const size_t height );
+static const char FILETYPE_WORLD[] = "wld";
+static const char FILETYPE_BACKUP[] = "bkp";
 
-World World_from_file( const char *world_name );
+int32_t get_base_path( SM_String *out );
 
-void World_write( World *world );
+int32_t get_world_path( SM_String *out );
 
-void World_clear( World *world );
+int32_t get_config_path( SM_String *out );
 
-#endif /* WORLD_H */
+#endif /* PATH_H */

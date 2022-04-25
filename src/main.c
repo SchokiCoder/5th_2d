@@ -28,6 +28,7 @@
 #include <SGUI_label.h>
 #include <SGUI_button.h>
 #include <time.h>
+#include "config.h"
 #include "app.h"
 #include "motd.h"
 #include "game.h"
@@ -140,6 +141,60 @@ void btn_chapter1_click( void *ptr )
 	game_run(data->path_world, data->renderer);
 }
 
+#include "world.h"
+void gen_demo_horizontal( void ) {
+	World out = World_new("test", 16, 16);
+
+	out.blocks[0][0] = B_STONE;
+	out.blocks[0][1] = B_STONE;
+	out.blocks[0][5] = B_DIRT;
+
+	out.blocks[1][5] = B_DIRT;
+	out.blocks[1][6] = B_STONE;
+
+	out.blocks[2][5] = B_DIRT;
+	out.blocks[2][6] = B_STONE;
+
+	out.blocks[3][5] = B_DIRT;
+	out.blocks[3][6] = B_STONE;
+
+	out.blocks[4][5] = B_DIRT;
+	out.blocks[4][6] = B_STONE;
+
+	out.blocks[5][5] = B_DIRT;
+	out.blocks[5][6] = B_STONE;
+
+	out.blocks[6][6] = B_STONE;
+
+	out.blocks[7][6] = B_STONE;
+
+	out.blocks[10][0] = B_STONE;
+	out.blocks[10][1] = B_STONE;
+
+	out.walls[0][3] = B_DIRT;
+	out.walls[0][4] = B_DIRT;
+
+	out.walls[1][3] = B_DIRT;
+	out.walls[1][4] = B_DIRT;
+
+	out.walls[2][3] = B_DIRT;
+	out.walls[2][4] = B_DIRT;
+
+	out.walls[3][3] = B_DIRT;
+	out.walls[3][4] = B_DIRT;
+
+	out.walls[4][4] = B_DIRT;
+
+	out.entities[0].type = E_PLAYER,
+	out.entities[0].rect.x = 2.0f * BLOCK_SIZE;
+	out.entities[0].rect.y = 1.0f * BLOCK_SIZE;
+	out.entities[0].rect.w = PLAYER_WIDTH;
+	out.entities[0].rect.h = PLAYER_HEIGHT;
+
+	World_write(&out);
+	World_clear(&out);
+}
+
 int main()
 {
 	SM_String window_title = SM_String_new(64);
@@ -149,6 +204,7 @@ int main()
 	TTF_Font *font;
 	bool main_active = true;
 	SDL_Event event;
+	Config cfg = Config_new();
 
 	SGUI_Menu mnu_main;
 	SGUI_Label lbl_main;
@@ -192,6 +248,9 @@ int main()
     	goto main_clear;
     }
 
+    // load config
+    Config_load(&cfg);
+
     // load font
     font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 16);
 
@@ -203,8 +262,8 @@ int main()
     // create window and renderer
     window = SDL_CreateWindow(
     	window_title.str,
-    	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-    	640, 480,
+    	cfg.gfx_window_x, cfg.gfx_window_y,
+    	cfg.gfx_window_w, cfg.gfx_window_h,
     	SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, 0);
 
@@ -239,8 +298,8 @@ int main()
     // define menus
     mnu_main.rect.x = 0;
     mnu_main.rect.y = 0;
-    mnu_main.rect.w = 640;
-    mnu_main.rect.h = 480;
+    mnu_main.rect.w = cfg.gfx_window_w;
+    mnu_main.rect.h = cfg.gfx_window_h;
 
     SM_String_copy_cstr(&lbl_main.text, APP_NAME);
     SGUI_Label_update_sprite(&lbl_main);
@@ -272,8 +331,8 @@ int main()
     SGUI_Button_update_sprite(&btn_version);
     btn_version.rect.w = btn_version.sprite.surface->w;
     btn_version.rect.h = btn_version.sprite.surface->h;
-    btn_version.rect.x = 640 - btn_version.rect.w - 5;
-    btn_version.rect.y = 480 - btn_version.rect.h - 5;
+    btn_version.rect.x = cfg.gfx_window_w - btn_version.rect.w - 5;
+    btn_version.rect.y = cfg.gfx_window_h - btn_version.rect.h - 5;
     btn_version.func_click = btn_version_click;
 
     mnu_start_game.rect.x = 100;
