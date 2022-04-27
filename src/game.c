@@ -26,7 +26,6 @@
 #include "world.h"
 #include "block.h"
 #include "entity.h"
-#include "player.h"
 #include "game.h"
 
 #ifdef _WIN32
@@ -98,13 +97,13 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 #endif
 
 	SM_String msg = SM_String_new(16);
-	SGUI_Sprite spr_blocks[NUM_BLOCK_TYPES];
-	SGUI_Sprite spr_walls[NUM_BLOCK_TYPES];
-	SGUI_Sprite spr_ents[NUM_ENT_TYPES];
+	SGUI_Sprite spr_blocks[B_LAST + 1];
+	SGUI_Sprite spr_walls[B_LAST + 1];
+	SGUI_Sprite spr_ents[E_LAST + 1];
 	World world = {.invalid = false};
-	Player player = {.velocity_x = 0.0f, .velocity_y = 0.0f};
 	SDL_Event event;
     IPoint wld_draw_pts[2];
+    WldEntity *player = NULL;
 	SDL_Rect viewport;
 	SDL_Rect temp;
 	const uint8_t *kbd;
@@ -120,13 +119,13 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 	viewport.h = cfg->gfx_window_h;
 
 	// init sprites
-	for (uint_fast32_t i = 0; i < NUM_BLOCK_TYPES; i++)
+	for (uint_fast32_t i = 0; i <= B_LAST; i++)
 	{
 		spr_blocks[i] = SGUI_Sprite_new();
 		spr_walls[i] = SGUI_Sprite_new();
 	}
 
-	for (uint_fast32_t i = 0; i < NUM_ENT_TYPES; i++)
+	for (uint_fast32_t i = 0; i <= E_LAST; i++)
 		spr_ents[i] = SGUI_Sprite_new();
 
 	// open world and check
@@ -142,14 +141,23 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 		goto game_clear;
 	}
 
-	// set player values
-	player.rect.x = (float) world.entities[0].rect.x;
-	player.rect.y = (float) world.entities[0].rect.y;
-	player.rect.w = (float) world.entities[0].rect.w;
-	player.rect.h = (float) world.entities[0].rect.h;
+	// set 1st player of world as player
+	for (size_t i = 0; i < world.ent_count; i++)
+		if (world.entities[i].id == E_PLAYER)
+			player = &world.entities[i];
+
+	if (player == NULL)
+	{
+		SM_String_copy_cstr(&msg, "World ");
+		SM_String_append_cstr(&msg, world_name);
+		SM_String_append_cstr(&msg, " does not contain a player entity.");
+
+		SM_log_err(msg.str);
+		goto game_clear;
+	}
 
 	// load block sprites
-    for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
+    for (uint_fast32_t i = 1; i <= B_LAST; i++)
 	{
 		spr_blocks[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_BLOCKS[i - 1]);
 
@@ -165,7 +173,7 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 	}
 
 	// create wall sprites
-    for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
+    for (uint_fast32_t i = 1; i <= B_LAST; i++)
     {
     	// copy block surface, modify, create texture
     	spr_walls[i].invalid = false;
@@ -182,7 +190,7 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
     }
 
 	// load ent sprites
-	for (uint_fast32_t i = 1; i < NUM_ENT_TYPES; i++)
+	for (uint_fast32_t i = 1; i <= E_LAST; i++)
 	{
 		spr_ents[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_ENTITIES[i - 1]);
 
@@ -324,82 +332,82 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 		// handle keyboard
 		if (kbd[SDL_SCANCODE_A])
 		{
-			player.velocity_x -= PLAYER_ACCELERATION * delta;
+			player->velocity_x -= DATA_ENTITIES[E_PLAYER].acceleration * delta;
 
-			if (player.velocity_x < PLAYER_MAX_VELOCITY * -1)
-				player.velocity_x = PLAYER_MAX_VELOCITY * -1;
+			if (player->velocity_x < DATA_ENTITIES[E_PLAYER].max_velocity * -1)
+				player->velocity_x = DATA_ENTITIES[E_PLAYER].max_velocity * -1;
 		}
 
 		if (kbd[SDL_SCANCODE_D])
 		{
-			player.velocity_x += PLAYER_ACCELERATION * delta;
+			player->velocity_x += DATA_ENTITIES[E_PLAYER].acceleration * delta;
 
-			if (player.velocity_x > PLAYER_MAX_VELOCITY)
-				player.velocity_x = PLAYER_MAX_VELOCITY;
+			if (player->velocity_x > DATA_ENTITIES[E_PLAYER].max_velocity)
+				player->velocity_x = DATA_ENTITIES[E_PLAYER].max_velocity;
 		}
 
 		if (kbd[SDL_SCANCODE_SPACE])
 		{
-			if (player.grounded)
-				player.velocity_y -= PLAYER_JUMP_VELOCITY;
+			if (player->grounded)
+				player->velocity_y -= DATA_ENTITIES[E_PLAYER].jump_velocity;
 		}
 
 		// gravity
-		player.velocity_y += GRAVITY * delta;
+		player->velocity_y += ENTITY_GRAVITY * delta;
 
 		// apply walking friction or stop at velocity threshold
-		if (player.grounded)
+		if (player->grounded)
 		{
-			if (player.velocity_x > PLAYER_VELOCITY_THRESHOLD)
-				player.velocity_x -= PLAYER_WALKING_FRICTION * delta;
+			if (player->velocity_x > ENTITY_VELOCITY_THRESHOLD)
+				player->velocity_x -= DATA_ENTITIES[E_PLAYER].decceleration * delta;
 
-			else if (player.velocity_x < (PLAYER_VELOCITY_THRESHOLD * -1.0f))
-				player.velocity_x += PLAYER_WALKING_FRICTION * delta;
+			else if (player->velocity_x < (ENTITY_VELOCITY_THRESHOLD * -1.0f))
+				player->velocity_x += DATA_ENTITIES[E_PLAYER].decceleration * delta;
 
 			else
-				player.velocity_x = 0.0f;
+				player->velocity_x = 0.0f;
 		}
 
 		// movement proccessing
-		if (player.velocity_x != 0.0f)
+		if (player->velocity_x != 0.0f)
 		{
-			x_step = player.velocity_x * delta;
-			move_player_x(&player, x_step, &world);
+			x_step = player->velocity_x * delta;
+			WldEntity_move_x(player, x_step, &world);
 		}
 
-		if (player.velocity_y != 0.0f)
+		if (player->velocity_y != 0.0f)
 		{
-			y_step = player.velocity_y * delta;
-			move_player_y(&player, y_step, &world);
+			y_step = player->velocity_y * delta;
+			WldEntity_move_y(player, y_step, &world);
 		}
 
 #ifdef _DEBUG
-        sprintf(lbl_velocity_x_val.text.str, "%f", player.velocity_x);
+        sprintf(lbl_velocity_x_val.text.str, "%f", player->velocity_x);
         lbl_velocity_x_val.text.len = strlen(lbl_velocity_x_val.text.str);
         SGUI_Label_update_sprite(&lbl_velocity_x_val);
         lbl_velocity_x_val.rect.w = lbl_velocity_x_val.sprite.surface->w;
         lbl_velocity_x_val.rect.h = lbl_velocity_x_val.sprite.surface->h;
 
-        sprintf(lbl_velocity_y_val.text.str, "%f", player.velocity_y);
-        sprintf(lbl_velocity_y_val.text.str, "%f", player.rect.y);
+        sprintf(lbl_velocity_y_val.text.str, "%f", player->velocity_y);
+        sprintf(lbl_velocity_y_val.text.str, "%f", player->rect.y);
         lbl_velocity_y_val.text.len = strlen(lbl_velocity_y_val.text.str);
         SGUI_Label_update_sprite(&lbl_velocity_y_val);
         lbl_velocity_y_val.rect.w = lbl_velocity_y_val.sprite.surface->w;
         lbl_velocity_y_val.rect.h = lbl_velocity_y_val.sprite.surface->h;
 
-        sprintf(lbl_pos_x_val.text.str, "%f", player.rect.x);
+        sprintf(lbl_pos_x_val.text.str, "%f", player->rect.x);
         lbl_pos_x_val.text.len = strlen(lbl_pos_x_val.text.str);
         SGUI_Label_update_sprite(&lbl_pos_x_val);
         lbl_pos_x_val.rect.w = lbl_pos_x_val.sprite.surface->w;
         lbl_pos_x_val.rect.h = lbl_pos_x_val.sprite.surface->h;
 
-        sprintf(lbl_pos_y_val.text.str, "%f", player.rect.y);
+        sprintf(lbl_pos_y_val.text.str, "%f", player->rect.y);
         lbl_pos_y_val.text.len = strlen(lbl_pos_y_val.text.str);
         SGUI_Label_update_sprite(&lbl_pos_y_val);
         lbl_pos_y_val.rect.w = lbl_pos_y_val.sprite.surface->w;
         lbl_pos_y_val.rect.h = lbl_pos_y_val.sprite.surface->h;
 
-        sprintf(lbl_grounded_val.text.str, "%i", player.grounded);
+        sprintf(lbl_grounded_val.text.str, "%i", player->grounded);
         lbl_grounded_val.text.len = strlen(lbl_grounded_val.text.str);
         SGUI_Label_update_sprite(&lbl_grounded_val);
         lbl_grounded_val.rect.w = lbl_grounded_val.sprite.surface->w;
@@ -407,8 +415,8 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 #endif
 
 		// update viewport
-		viewport.x = (player.rect.x + player.rect.w) - (viewport.w / 2);
-		viewport.y = (player.rect.y + player.rect.h) - (viewport.h / 2);
+		viewport.x = (player->rect.x + player->rect.w) - (viewport.w / 2);
+		viewport.y = (player->rect.y + player->rect.h) - (viewport.h / 2);
 
 		if (viewport.x < 0)
 			viewport.x = 0;
@@ -463,9 +471,9 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 		}
 
 		// draw entities
-		for (uint_fast32_t i = 0; i < WORLD_MAX_ENTITIES; i++)
+		for (size_t i = 0; i < world.ent_count; i++)
 		{
-            switch (world.entities[i].type)
+            switch (world.entities[i].id)
             {
             case E_NONE:
             case E_PLAYER:
@@ -474,10 +482,10 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 		}
 
 		// draw player
-		temp.x = player.rect.x;
-		temp.y = player.rect.y;
-		temp.w = player.rect.w;
-		temp.h = player.rect.h;
+		temp.x = player->rect.x;
+		temp.y = player->rect.y;
+		temp.w = player->rect.w;
+		temp.h = player->rect.h;
 
 		SDL_RenderCopy(
 			renderer,
@@ -488,7 +496,7 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 #ifdef _DEBUG
 		// and optical collision box (not actual hitbox)
 		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-		SDL_RenderDrawRect(renderer, &player.box);
+		SDL_RenderDrawRect(renderer, &player->box);
 
 		// draw debug menu (deactivate viewport for it)
 		SDL_RenderSetViewport(renderer, NULL);
@@ -513,13 +521,13 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 	SM_String_clear(&msg);
 
 	// clear sprites
-    for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
+    for (uint_fast32_t i = 1; i <= B_LAST; i++)
     {
     	SGUI_Sprite_clear(&spr_blocks[i]);
     	SGUI_Sprite_clear(&spr_walls[i]);
     }
 
-    for (uint_fast32_t i = 1; i < NUM_ENT_TYPES; i++)
+    for (uint_fast32_t i = 1; i <= E_LAST; i++)
     {
     	SGUI_Sprite_clear(&spr_ents[i]);
 	}

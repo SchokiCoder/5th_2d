@@ -19,21 +19,23 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <SDL.h>
+#include <SM_string.h>
 #include <stdbool.h>
-#include "entity.h"
+#include "block.h"
 
-#define WORLD_NAME_MAX_LEN 64
-#define WORLD_MAX_ENTITIES 16
+typedef struct WldEntity WldEntity;
 
 typedef struct World
 {
 	bool invalid;
-	char world_name[WORLD_NAME_MAX_LEN];
+	SM_String world_name;
 	size_t width;
 	size_t height;
     Block **blocks;					// actual terrain
-    Block **walls;						// background terrain
-    Entity entities[WORLD_MAX_ENTITIES];
+    Block **walls;					// background terrain
+    size_t ent_count;
+    WldEntity *entities;
     SDL_Texture ***block_textures;
     SDL_Texture ***wall_textures;
 } World ;
@@ -46,4 +48,4 @@ void World_write( World *world );
 
 void World_clear( World *world );
 
-#endif /* WORLD_H */
+#endif // WORLD_H

@@ -33,6 +33,8 @@
 #include "motd.h"
 #include "game.h"
 
+static const int FONT_SIZE = 16;
+
 static const float MENU_FRAMERATE = 30.0f;
 
 static const SGUI_Theme THEME_MAIN = {
@@ -87,25 +89,57 @@ static const SGUI_Theme THEME_WINDOW = {
 	},
 };
 
-struct MenuPointers
+typedef struct MenuData
 {
 	SGUI_Menu *mnu_main;
 	SGUI_Menu *mnu_start_game;
-};
+	SGUI_Menu *mnu_settings;
+} MenuData ;
 
-struct GameData
+typedef struct BtnSettingsData
 {
-	char *path_world;
+	MenuData *menu_data;
+	Config *cfg;
+    SGUI_Entry *txt_gfx_window_w;
+    SGUI_Entry *txt_gfx_window_h;
+    SGUI_Entry *txt_gfx_window_fullscreen;
+} BtnSettingsData ;
+
+typedef struct GameData
+{
+	char *world_name;
 	SDL_Renderer *renderer;
 	Config *cfg;
-};
+} GameData ;
 
 void btn_start_game_click( void *ptr )
 {
-	struct MenuPointers *data = (struct MenuPointers*) ptr;
+	MenuData *data = (MenuData*) ptr;
 
 	data->mnu_main->active = false;
 	data->mnu_start_game->visible = true;
+}
+
+void btn_settings_click( void *ptr )
+{
+	BtnSettingsData *data = (BtnSettingsData*) ptr;
+
+	// toggle menus
+	data->menu_data->mnu_main->active = false;
+	data->menu_data->mnu_settings->visible = true;
+
+	// update setting entries
+	sprintf(data->txt_gfx_window_w->text.str, "%i", data->cfg->gfx_window_w);
+	data->txt_gfx_window_w->text.len = SM_strlen(data->txt_gfx_window_w->text.str);
+	SGUI_Entry_update_sprites(data->txt_gfx_window_w);
+
+	sprintf(data->txt_gfx_window_h->text.str, "%i", data->cfg->gfx_window_h);
+	data->txt_gfx_window_h->text.len = SM_strlen(data->txt_gfx_window_h->text.str);
+	SGUI_Entry_update_sprites(data->txt_gfx_window_h);
+
+	sprintf(data->txt_gfx_window_fullscreen->text.str, "%i", data->cfg->gfx_window_fullscreen);
+	data->txt_gfx_window_fullscreen->text.len = SM_strlen(data->txt_gfx_window_fullscreen->text.str);
+	SGUI_Entry_update_sprites(data->txt_gfx_window_fullscreen);
 }
 
 void btn_exit_click( void *ptr )
@@ -129,22 +163,40 @@ void btn_version_click( )
 
 void btn_start_game_close_click( void *ptr )
 {
-	struct MenuPointers *data = (struct MenuPointers*) ptr;
+	MenuData *data = (MenuData*) ptr;
 
 	data->mnu_main->active = true;
 	data->mnu_start_game->visible = false;
 }
 
-void btn_chapter1_click( void *ptr )
+void btn_settings_close_click( void *ptr )
 {
-	struct GameData *data = (struct GameData*) ptr;
+	BtnSettingsData *data = (BtnSettingsData*) ptr;
 
-	game_run(data->path_world, data->renderer, data->cfg);
+	// toggle menus
+	data->menu_data->mnu_main->active = true;
+	data->menu_data->mnu_settings->visible = false;
+
+	// save changes to cfg
+    data->cfg->gfx_window_w = strtol(data->txt_gfx_window_w->text.str, NULL, 10);
+    data->cfg->gfx_window_h = strtol(data->txt_gfx_window_h->text.str, NULL, 10);
+    data->cfg->gfx_window_fullscreen = strtol(data->txt_gfx_window_fullscreen->text.str, NULL, 10);
 }
 
-#include "world.h"
-void gen_demo_horizontal( void ) {
-	World out = World_new("test", 16, 16);
+void btn_chapter1_click( void *ptr )
+{
+	GameData *data = (GameData*) ptr;
+
+	game_run(data->world_name, data->renderer, data->cfg);
+}
+
+/*
+void gen_demo_horizontal( void )
+{
+	#include "world.h"
+	#include "entity.h"
+
+	World out = World_new("test", 128, 128);
 
 	out.blocks[0][0] = B_STONE;
 	out.blocks[0][1] = B_STONE;
@@ -186,22 +238,22 @@ void gen_demo_horizontal( void ) {
 
 	out.walls[4][4] = B_DIRT;
 
-	out.entities[0].type = E_PLAYER,
+	out.entities[0].id = E_PLAYER;
 	out.entities[0].rect.x = 2.0f * BLOCK_SIZE;
 	out.entities[0].rect.y = 1.0f * BLOCK_SIZE;
-	out.entities[0].rect.w = PLAYER_WIDTH;
-	out.entities[0].rect.h = PLAYER_HEIGHT;
+	out.entities[0].rect.w = DATA_ENTITIES[E_PLAYER].width;
+	out.entities[0].rect.h = DATA_ENTITIES[E_PLAYER].height;
 
 	World_write(&out);
 	World_clear(&out);
-}
+}*/
 
 int main()
 {
 	SM_String window_title = SM_String_new(64);
 	SM_String msg = SM_String_new(16);
 	SDL_Window *window;
-	SDL_Renderer *renderer;
+	SDL_Renderer *renderer = NULL;
 	TTF_Font *font;
 	bool main_active = true;
 	SDL_Event event;
@@ -210,6 +262,7 @@ int main()
 	SGUI_Menu mnu_main;
 	SGUI_Label lbl_main;
 	SGUI_Button btn_start_game;
+	SGUI_Button btn_settings;
 	SGUI_Button btn_exit;
 	SGUI_Button btn_version;
 
@@ -218,9 +271,27 @@ int main()
 	SGUI_Label lbl_start_game;
 	SGUI_Button btn_chapter1;
 
-	struct MenuPointers menu_pointers = {
+	SGUI_Menu mnu_settings;
+	SGUI_Button btn_settings_close;
+	SGUI_Label lbl_gfx_window_w;
+	SGUI_Entry txt_gfx_window_w;
+	SGUI_Label lbl_gfx_window_h;
+	SGUI_Entry txt_gfx_window_h;
+	SGUI_Label lbl_gfx_window_fullscreen;
+	SGUI_Entry txt_gfx_window_fullscreen;
+
+	MenuData menu_data = {
 		.mnu_main = &mnu_main,
-		.mnu_start_game = &mnu_start_game
+		.mnu_start_game = &mnu_start_game,
+		.mnu_settings = &mnu_settings,
+	};
+
+	BtnSettingsData btn_settings_data = {
+		.cfg = &cfg,
+		.menu_data = &menu_data,
+		.txt_gfx_window_w = &txt_gfx_window_w,
+		.txt_gfx_window_h = &txt_gfx_window_h,
+		.txt_gfx_window_fullscreen = &txt_gfx_window_fullscreen,
 	};
 
 	// open log file and check
@@ -231,6 +302,15 @@ int main()
 		printf("Log file \"%s\" could not be opened.\nAbort.\n", SM_PATH_LOG);
 		goto main_clear;
 	}
+
+	// load config
+    Config_load(&cfg);
+
+    // parse config values
+    int window_mode = SDL_WINDOW_SHOWN;
+
+    if (cfg.gfx_window_fullscreen)
+		window_mode = SDL_WINDOW_FULLSCREEN;
 
 	// seed random generator
 	srand(time(NULL));
@@ -249,11 +329,8 @@ int main()
     	goto main_clear;
     }
 
-    // load config
-    Config_load(&cfg);
-
     // load font
-    font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 16);
+    font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", FONT_SIZE);
 
     // create window title
     SM_String_copy_cstr(&window_title, APP_NAME);
@@ -265,7 +342,7 @@ int main()
     	window_title.str,
     	cfg.gfx_window_x, cfg.gfx_window_y,
     	cfg.gfx_window_w, cfg.gfx_window_h,
-    	SDL_WINDOW_SHOWN);
+    	window_mode);
     renderer = SDL_CreateRenderer(window, -1, 0);
 
     // check window and renderer
@@ -275,9 +352,9 @@ int main()
     	goto main_clear;
     }
 
-    // prep some data
-	struct GameData game_data = {
-		.path_world = "test",
+    // game data
+    GameData game_data = {
+		.world_name = "test",
 		.renderer = renderer,
 		.cfg = &cfg,
 	};
@@ -289,6 +366,7 @@ int main()
     mnu_main = SGUI_Menu_new(renderer, THEME_MAIN.menu);
     SGUI_Label_new(&lbl_main, &mnu_main, font, THEME_MAIN.label);
     SGUI_Button_new(&btn_start_game, &mnu_main, font, THEME_MAIN.button);
+    SGUI_Button_new(&btn_settings, &mnu_main, font, THEME_MAIN.button);
     SGUI_Button_new(&btn_exit, &mnu_main, font, THEME_MAIN.button);
     SGUI_Button_new(&btn_version, &mnu_main, font, THEME_MAIN.button);
 
@@ -296,6 +374,15 @@ int main()
     SGUI_Button_new(&btn_start_game_close, &mnu_start_game, font, THEME_WINDOW.button);
     SGUI_Label_new(&lbl_start_game, &mnu_start_game, font, THEME_WINDOW.label);
     SGUI_Button_new(&btn_chapter1, &mnu_start_game, font, THEME_WINDOW.button);
+
+    mnu_settings = SGUI_Menu_new(renderer, THEME_WINDOW.menu);
+    SGUI_Button_new(&btn_settings_close, &mnu_settings, font, THEME_WINDOW.button);
+    SGUI_Label_new(&lbl_gfx_window_w, &mnu_settings, font, THEME_WINDOW.label);
+    SGUI_Entry_new(&txt_gfx_window_w, &mnu_settings, font, THEME_WINDOW.entry);
+    SGUI_Label_new(&lbl_gfx_window_h, &mnu_settings, font, THEME_WINDOW.label);
+    SGUI_Entry_new(&txt_gfx_window_h, &mnu_settings, font, THEME_WINDOW.entry);
+    SGUI_Label_new(&lbl_gfx_window_fullscreen, &mnu_settings, font, THEME_WINDOW.label);
+    SGUI_Entry_new(&txt_gfx_window_fullscreen, &mnu_settings, font, THEME_WINDOW.entry);
 
     // define menus
     mnu_main.rect.x = 0;
@@ -317,14 +404,23 @@ int main()
     btn_start_game.rect.x = 75;
     btn_start_game.rect.y = lbl_main.rect.y + (lbl_main.rect.h * 2);
     btn_start_game.func_click = btn_start_game_click;
-    btn_start_game.data_click = &menu_pointers;
+    btn_start_game.data_click = &menu_data;
+
+    SM_String_copy_cstr(&btn_settings.text, "Settings");
+    SGUI_Button_update_sprite(&btn_settings);
+    btn_settings.rect.w = btn_settings.sprite.surface->w;
+    btn_settings.rect.h = btn_settings.sprite.surface->h;
+    btn_settings.rect.x = btn_start_game.rect.x;
+    btn_settings.rect.y = btn_start_game.rect.y + (btn_start_game.rect.h * 2);
+    btn_settings.func_click = btn_settings_click;
+    btn_settings.data_click = &btn_settings_data;
 
     SM_String_copy_cstr(&btn_exit.text, "Exit");
     SGUI_Button_update_sprite(&btn_exit);
     btn_exit.rect.w = btn_exit.sprite.surface->w;
     btn_exit.rect.h = btn_exit.sprite.surface->h;
-    btn_exit.rect.x = btn_start_game.rect.x;
-    btn_exit.rect.y = btn_start_game.rect.y + (btn_start_game.rect.h * 2);
+    btn_exit.rect.x = btn_settings.rect.x;
+    btn_exit.rect.y = btn_settings.rect.y + (btn_settings.rect.h * 2);
     btn_exit.func_click = btn_exit_click;
     btn_exit.data_click = &main_active;
 
@@ -351,7 +447,7 @@ int main()
     	mnu_start_game.rect.x + mnu_start_game.rect.w - btn_start_game_close.rect.w;
     btn_start_game_close.rect.y = mnu_start_game.rect.y;
     btn_start_game_close.func_click = btn_start_game_close_click;
-    btn_start_game_close.data_click = &menu_pointers;
+    btn_start_game_close.data_click = &menu_data;
 
     SM_String_copy_cstr(&lbl_start_game.text, "Select a chapter");
     SGUI_Label_update_sprite(&lbl_start_game);
@@ -369,6 +465,58 @@ int main()
     btn_chapter1.func_click = btn_chapter1_click;
     btn_chapter1.data_click = &game_data;
 
+    mnu_settings.rect.x = 200;
+    mnu_settings.rect.y = 200;
+    mnu_settings.rect.w = 400;
+    mnu_settings.rect.h = 400;
+    mnu_settings.visible = false;
+
+    SM_String_copy_cstr(&btn_settings_close.text, "x");
+    SGUI_Button_update_sprite(&btn_settings_close);
+    btn_settings_close.rect.w = btn_settings_close.sprite.surface->w;
+    btn_settings_close.rect.h = btn_settings_close.sprite.surface->h;
+    btn_settings_close.rect.x =
+    	mnu_settings.rect.x + mnu_settings.rect.w - btn_settings_close.rect.w;
+    btn_settings_close.rect.y = mnu_settings.rect.y;
+    btn_settings_close.func_click = btn_settings_close_click;
+    btn_settings_close.data_click = &btn_settings_data;
+
+    SM_String_copy_cstr(&lbl_gfx_window_w.text, "Resolution X");
+    SGUI_Label_update_sprite(&lbl_gfx_window_w);
+    lbl_gfx_window_w.rect.w = lbl_gfx_window_w.sprite.surface->w;
+    lbl_gfx_window_w.rect.h = lbl_gfx_window_w.sprite.surface->h;
+    lbl_gfx_window_w.rect.x = mnu_settings.rect.x + 25;
+    lbl_gfx_window_w.rect.y = mnu_settings.rect.y;
+
+    txt_gfx_window_w.rect.w = 200;
+    txt_gfx_window_w.rect.h = FONT_SIZE;
+    txt_gfx_window_w.rect.x = lbl_gfx_window_w.rect.x + lbl_gfx_window_w.rect.w + 25;
+    txt_gfx_window_w.rect.y = lbl_gfx_window_w.rect.y;
+
+    SM_String_copy_cstr(&lbl_gfx_window_h.text, "Resolution Y");
+    SGUI_Label_update_sprite(&lbl_gfx_window_h);
+    lbl_gfx_window_h.rect.w = lbl_gfx_window_h.sprite.surface->w;
+    lbl_gfx_window_h.rect.h = lbl_gfx_window_h.sprite.surface->h;
+    lbl_gfx_window_h.rect.x = lbl_gfx_window_w.rect.x;
+    lbl_gfx_window_h.rect.y = lbl_gfx_window_w.rect.y + (lbl_gfx_window_w.rect.h * 2);
+
+    txt_gfx_window_h.rect.w = 200;
+    txt_gfx_window_h.rect.h = FONT_SIZE;
+    txt_gfx_window_h.rect.x = lbl_gfx_window_h.rect.x + lbl_gfx_window_h.rect.w + 25;
+    txt_gfx_window_h.rect.y = lbl_gfx_window_h.rect.y;
+
+    SM_String_copy_cstr(&lbl_gfx_window_fullscreen.text, "Fullscreen");
+    SGUI_Label_update_sprite(&lbl_gfx_window_fullscreen);
+    lbl_gfx_window_fullscreen.rect.w = lbl_gfx_window_h.sprite.surface->w;
+    lbl_gfx_window_fullscreen.rect.h = lbl_gfx_window_h.sprite.surface->h;
+    lbl_gfx_window_fullscreen.rect.x = lbl_gfx_window_h.rect.x;
+    lbl_gfx_window_fullscreen.rect.y = lbl_gfx_window_h.rect.y + (lbl_gfx_window_w.rect.h * 2);
+
+    txt_gfx_window_fullscreen.rect.w = 20;
+    txt_gfx_window_fullscreen.rect.h = FONT_SIZE;
+    txt_gfx_window_fullscreen.rect.x = lbl_gfx_window_fullscreen.rect.x + lbl_gfx_window_fullscreen.rect.w + 25;
+    txt_gfx_window_fullscreen.rect.y = lbl_gfx_window_fullscreen.rect.y;
+
     // mainloop
     float ts_draw, ts_now;
 
@@ -380,6 +528,7 @@ int main()
 			// menu events
 			SGUI_Menu_handle_event(&mnu_main, &event);
 			SGUI_Menu_handle_event(&mnu_start_game, &event);
+			SGUI_Menu_handle_event(&mnu_settings, &event);
 
 			// app events
 			switch (event.type)
@@ -397,12 +546,16 @@ int main()
 		{
 			SGUI_Menu_draw(&mnu_main);
 			SGUI_Menu_draw(&mnu_start_game);
+			SGUI_Menu_draw(&mnu_settings);
 
 			SDL_RenderPresent(renderer);
 
 			ts_draw = now();
 		}
     }
+
+	// save config
+	Config_save(&cfg);
 
 	main_clear:
 
@@ -413,6 +566,7 @@ int main()
 	// clear menus
 	SGUI_Menu_clear(&mnu_main);
 	SGUI_Menu_clear(&mnu_start_game);
+	SGUI_Menu_clear(&mnu_settings);
 
 	// quit TTF
 	TTF_Quit();

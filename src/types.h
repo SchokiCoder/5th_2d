@@ -31,4 +31,12 @@ typedef struct IPoint
 	int y;
 } IPoint ;
 
+typedef struct FRect
+{
+	float x;
+	float y;
+	float w;
+	float h;
+} FRect ;
+
 #endif // TYPES_H

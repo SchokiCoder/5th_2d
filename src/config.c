@@ -29,6 +29,7 @@ Config Config_new( void )
 		.gfx_window_y = CFG_STD_GFX_WINDOW_Y,
 		.gfx_window_w = CFG_STD_GFX_WINDOW_W,
 		.gfx_window_h = CFG_STD_GFX_WINDOW_H,
+		.gfx_window_fullscreen = CFG_STD_GFX_WINDOW_FULLSCREEN,
 	};
 
 	return cfg;
@@ -65,20 +66,22 @@ void Config_load( Config *cfg )
 		if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_X))
 			cfg->gfx_window_x = strtol(dict.data[i].value.str, NULL, 10);
 
-		else if(SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_Y))
+		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_Y))
 			cfg->gfx_window_y = strtol(dict.data[i].value.str, NULL, 10);
 
-		else if(SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_W))
+		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_W))
 			cfg->gfx_window_w = strtol(dict.data[i].value.str, NULL, 10);
 
-		else if(SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_H))
+		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_H))
 			cfg->gfx_window_h = strtol(dict.data[i].value.str, NULL, 10);
+
+		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_FULLSCREEN))
+			cfg->gfx_window_fullscreen = strtol(dict.data[i].value.str, NULL, 10);
 
 		// unknown option
 		else
 		{
-			SM_String_empty(&msg);
-			SM_String_append_cstr(&msg, "Unknown config setting \"");
+			SM_String_copy_cstr(&msg, "Unknown config setting \"");
 			SM_String_append(&msg, &dict.data[i].key);
 			SM_String_append_cstr(&msg, "\".");
 			SM_log_warn(msg.str);
@@ -114,6 +117,8 @@ void Config_save( Config *cfg )
 	SM_Dict_add(&dict, CFG_SETTING_GFX_WINDOW_W, temp);
 	sprintf(temp, "%i", cfg->gfx_window_h);
 	SM_Dict_add(&dict, CFG_SETTING_GFX_WINDOW_H, temp);
+	sprintf(temp, "%i", cfg->gfx_window_fullscreen);
+	SM_Dict_add(&dict, CFG_SETTING_GFX_WINDOW_FULLSCREEN, temp);
 
 	// save
 	if (!SM_Dict_write(&dict, filepath.str))

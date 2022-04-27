@@ -20,24 +20,70 @@
 #define ENTITY_H
 
 #include <SDL.h>
-#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include "types.h"
 #include "block.h"
+#include "world.h"
 
-#define NUM_ENT_TYPES 2
+static const float ENTITY_VELOCITY_THRESHOLD = 0.01f;
+static const float ENTITY_GRAVITY = BLOCK_SIZE * 18;
 
-static const uint32_t PLAYER_WIDTH = BLOCK_SIZE * 2 - 6;
-static const uint32_t PLAYER_HEIGHT = BLOCK_SIZE * 3 - 8;
-
-enum EntityType
+typedef enum Entity
 {
 	E_NONE,
-	E_PLAYER
-};
+	E_PLAYER,
 
-typedef struct Entity
-{
-	enum EntityType type;
-	SDL_Rect rect;
+	E_LAST = E_PLAYER
 } Entity ;
 
-#endif /* ENTITY_H */
+typedef struct EntityData
+{
+	char *name;
+	size_t width;
+	size_t height;
+	float acceleration;
+	float max_velocity;
+	float decceleration;
+	float jump_velocity;
+} EntityData ;
+
+static const EntityData DATA_ENTITIES[] = {
+	{
+	.name = "none",
+	.width = 0,
+	.height = 0,
+	.acceleration = 0,
+	.max_velocity = 0,
+	.decceleration = 0,
+	.jump_velocity = 0,
+	},
+
+	{
+	.name = "player",
+	.width = (BLOCK_SIZE * 2) - 6,
+	.height = (BLOCK_SIZE * 3) - 8,
+	.acceleration = BLOCK_SIZE * 12,
+	.max_velocity = BLOCK_SIZE * 6,
+	.decceleration = BLOCK_SIZE * 6,
+	.jump_velocity = BLOCK_SIZE * 12,
+	},
+};
+
+typedef struct WldEntity
+{
+	Entity id;
+    FRect rect;		// actual hitbox
+    float velocity_x, velocity_y;
+    bool grounded;
+
+#ifdef _DEBUG
+    SDL_Rect box;	// optical box in which collision checks with blocks happen
+#endif
+} WldEntity ;
+
+void WldEntity_move_x( WldEntity *wldent, float x_distance, World *world );
+
+void WldEntity_move_y( WldEntity *wldent, float y_distance, World *world );
+
+#endif // ENTITY_H

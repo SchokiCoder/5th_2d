@@ -27,8 +27,9 @@ typedef enum Block
 {
 	B_NONE,
 	B_DIRT,
-	B_STONE
+	B_STONE,
+
+	B_LAST = B_STONE
 } Block ;
-#define NUM_BLOCK_TYPES 3
 
 #endif /* BLOCK_H */

@@ -37,19 +37,27 @@ void World_allocate( World *world )
 		world->block_textures[i] = malloc(world->height * sizeof(SDL_Texture*));
 		world->wall_textures[i] = malloc(world->height * sizeof(SDL_Texture*));
 	}
+
+	world->entities = malloc(world->ent_count * sizeof(Entity));
 }
 
 World World_new( const char *world_name, const size_t width, const size_t height )
 {
 	World world = {
 		.invalid = false,
+		.world_name = SM_String_from(world_name),
 		.width = width,
 		.height = height,
+		.ent_count = 1,
 	};
 
 	// set values
-	strcpy(world.world_name, world_name);
 	World_allocate(&world);
+	world.entities[0].id = E_PLAYER;
+	world.entities[0].rect.x = 0;
+	world.entities[0].rect.y = 0;
+	world.entities[0].rect.w = DATA_ENTITIES[E_PLAYER].width;
+	world.entities[0].rect.h = DATA_ENTITIES[E_PLAYER].height;
 
 	return world;
 }
@@ -58,7 +66,8 @@ World World_from_file( const char *world_name )
 {
 	SM_String filepath = SM_String_new(8);
 	World world = {
-		.invalid = false
+		.invalid = false,
+		.world_name = SM_String_from(world_name),
 	};
 	FILE *f;
 
@@ -83,28 +92,26 @@ World World_from_file( const char *world_name )
 		return world;
 	}
 
-	// set name
-	strcpy(world.world_name, world_name);
-
 	// read header
 	fread(&world.width, sizeof(world.width), 1, f);
 	fread(&world.height, sizeof(world.height), 1, f);
+	fread(&world.ent_count, sizeof(world.ent_count), 1, f);
 
 	// allocate for blocks
 	World_allocate(&world);
 
 	// read blocks
-	for (uint32_t x = 0; x < world.width; x++)
+	for (size_t x = 0; x < world.width; x++)
 		fread(world.blocks[x], sizeof(world.blocks[x][0]), world.height, f);
 
 	// read walls
-	for (uint32_t x = 0; x < world.width; x++)
+	for (size_t x = 0; x < world.width; x++)
 		fread(world.walls[x], sizeof(world.walls[x][0]), world.height, f);
 
 	// read entitites
-	for (uint32_t i = 0; i < WORLD_MAX_ENTITIES; i++)
+	for (size_t i = 0; i < world.ent_count; i++)
 	{
-		fread(&world.entities[i].type, sizeof(world.entities[i].type), 1, f);
+		fread(&world.entities[i].id, sizeof(world.entities[i].id), 1, f);
 		fread(&world.entities[i].rect.x, sizeof(world.entities[i].rect.x), 1, f);
 		fread(&world.entities[i].rect.y, sizeof(world.entities[i].rect.y), 1, f);
 		fread(&world.entities[i].rect.w, sizeof(world.entities[i].rect.w), 1, f);
@@ -128,7 +135,7 @@ void World_write( World *world )
 		return;
 	}
 
-	SM_String_append_cstr(&filepath, world->world_name);
+	SM_String_append(&filepath, &world->world_name);
 	SM_String_append_cstr(&filepath, ".");
 	SM_String_append_cstr(&filepath, FILETYPE_WORLD);
 
@@ -146,19 +153,20 @@ void World_write( World *world )
 	// write header
 	fwrite(&world->width, sizeof(world->width), 1, f);
 	fwrite(&world->height, sizeof(world->height), 1, f);
+	fwrite(&world->ent_count, sizeof(world->ent_count), 1, f);
 
 	// write blocks
-    for (uint32_t x = 0; x < world->width; x++)
+    for (size_t x = 0; x < world->width; x++)
 		fwrite(world->blocks[x], sizeof(world->blocks[x][0]), world->height, f);
 
     // write walls
-    for (uint32_t x = 0; x < world->width; x++)
+    for (size_t x = 0; x < world->width; x++)
 		fwrite(world->walls[x], sizeof(world->walls[x][0]), world->height, f);
 
     // write entities
-    for (uint32_t i = 0; i < WORLD_MAX_ENTITIES; i++)
+    for (size_t i = 0; i < world->ent_count; i++)
     {
-    	fwrite(&world->entities[i].type, sizeof(world->entities[i].type), 1, f);
+    	fwrite(&world->entities[i].id, sizeof(world->entities[i].id), 1, f);
     	fwrite(&world->entities[i].rect.x, sizeof(world->entities[i].rect.x), 1, f);
     	fwrite(&world->entities[i].rect.y, sizeof(world->entities[i].rect.y), 1, f);
     	fwrite(&world->entities[i].rect.w, sizeof(world->entities[i].rect.w), 1, f);
@@ -171,6 +179,8 @@ void World_write( World *world )
 
 void World_clear( World *world )
 {
+	SM_String_clear(&world->world_name);
+
 	for (size_t i = 0; i < world->width; i++)
 	{
 		free(world->blocks[i]);
@@ -183,4 +193,6 @@ void World_clear( World *world )
 	free(world->walls);
 	free(world->block_textures);
 	free(world->wall_textures);
+
+	free(world->entities);
 }

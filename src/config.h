@@ -27,11 +27,13 @@ static const char CFG_SETTING_GFX_WINDOW_X[] =			"gfx_window_x";
 static const char CFG_SETTING_GFX_WINDOW_Y[] =			"gfx_window_y";
 static const char CFG_SETTING_GFX_WINDOW_W[] =			"gfx_window_w";
 static const char CFG_SETTING_GFX_WINDOW_H[] =			"gfx_window_h";
+static const char CFG_SETTING_GFX_WINDOW_FULLSCREEN[] =	"gfx_window_fullscreen";
 
 static const uint32_t CFG_STD_GFX_WINDOW_X =		SDL_WINDOWPOS_CENTERED;
 static const uint32_t CFG_STD_GFX_WINDOW_Y =		SDL_WINDOWPOS_CENTERED;
-static const float CFG_STD_GFX_WINDOW_W =			600.0f;
+static const float CFG_STD_GFX_WINDOW_W =			640.0f;
 static const float CFG_STD_GFX_WINDOW_H =			480.0f;
+static const bool CFG_STD_GFX_WINDOW_FULLSCREEN =	false;
 
 typedef struct Config
 {
@@ -40,6 +42,7 @@ typedef struct Config
 	int32_t gfx_window_y;
 	int32_t gfx_window_w;
 	int32_t gfx_window_h;
+	bool gfx_window_fullscreen;
 } Config ;
 
 Config Config_new( void );

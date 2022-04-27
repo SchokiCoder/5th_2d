@@ -18,7 +18,7 @@
 
 #ifndef PLAYER_H
 #define PLAYER_H
-
+/*
 #include <stdint.h>
 #include <stdbool.h>
 #include "block.h"
@@ -30,11 +30,6 @@ static const float PLAYER_MAX_VELOCITY = (float) BLOCK_SIZE * 6.0f;
 static const float PLAYER_WALKING_FRICTION = PLAYER_ACCELERATION / 2.0f;
 static const float GRAVITY = (float) BLOCK_SIZE * 18.0f;
 static const float PLAYER_JUMP_VELOCITY = (float) BLOCK_SIZE * 12.0f;
-
-typedef struct FRect
-{
-	float x, y, w, h;
-} FRect ;
 
 typedef struct Player
 {
@@ -50,5 +45,5 @@ typedef struct Player
 void move_player_x( Player *player, float x_distance, World *world );
 
 void move_player_y( Player *player, float y_distance, World *world );
-
+*/
 #endif /* PLAYER_H */

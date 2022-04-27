@@ -35,5 +35,6 @@ static const char *MOTDS[] = {
 	"Oktoberfest!",
 	"Advertiser friendly.",
 	"i guess",
-	"seventy meters"
+	"seventy meters",
+	"Nile would dissolve"
 };
