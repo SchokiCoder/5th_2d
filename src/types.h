@@ -16,15 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GAME_H
-#define GAME_H
+#ifndef TYPES_H
+#define TYPES_H
 
-#include <SDL_render.h>
+typedef struct FPoint
+{
+	float x;
+	float y;
+} FPoint ;
 
-typedef struct Config Config;
+typedef struct IPoint
+{
+	int x;
+	int y;
+} IPoint ;
 
-float now( void );
-
-void game_run( const char *path_world, SDL_Renderer *renderer, Config *cfg );
-
-#endif
+#endif // TYPES_H

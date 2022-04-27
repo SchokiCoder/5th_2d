@@ -21,6 +21,8 @@
 #include <SGUI_sprite.h>
 #include <SGUI_theme.h>
 #include <time.h>
+#include "types.h"
+#include "config.h"
 #include "world.h"
 #include "block.h"
 #include "entity.h"
@@ -78,7 +80,7 @@ float now( void )
 	return (float) clock() / (float) CLOCKS_PER_SEC;
 }
 
-void game_run( const char *world_name, SDL_Renderer *renderer )
+void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 {
 #ifdef _DEBUG
 	TTF_Font *font;
@@ -102,12 +104,30 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 	World world = {.invalid = false};
 	Player player = {.velocity_x = 0.0f, .velocity_y = 0.0f};
 	SDL_Event event;
+    IPoint wld_draw_pts[2];
+	SDL_Rect viewport;
 	SDL_Rect temp;
 	const uint8_t *kbd;
 	bool game_active = true;
 	float ts1, ts2, delta = 0.0f;
 	float x_step = 0.0f;
 	float y_step = 0.0f;
+
+	// set viewport
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.w = cfg->gfx_window_w;
+	viewport.h = cfg->gfx_window_h;
+
+	// init sprites
+	for (uint_fast32_t i = 0; i < NUM_BLOCK_TYPES; i++)
+	{
+		spr_blocks[i] = SGUI_Sprite_new();
+		spr_walls[i] = SGUI_Sprite_new();
+	}
+
+	for (uint_fast32_t i = 0; i < NUM_ENT_TYPES; i++)
+		spr_ents[i] = SGUI_Sprite_new();
 
 	// open world and check
 	world = World_from_file(world_name);
@@ -129,8 +149,6 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 	player.rect.h = (float) world.entities[0].rect.h;
 
 	// load block sprites
-    spr_blocks[B_NONE] = SGUI_Sprite_new();
-
     for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
 	{
 		spr_blocks[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_BLOCKS[i - 1]);
@@ -147,8 +165,6 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 	}
 
 	// create wall sprites
-	spr_walls[0] = SGUI_Sprite_new();
-
     for (uint_fast32_t i = 1; i < NUM_BLOCK_TYPES; i++)
     {
     	// copy block surface, modify, create texture
@@ -166,8 +182,6 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
     }
 
 	// load ent sprites
-	spr_ents[E_NONE] = SGUI_Sprite_new();
-
 	for (uint_fast32_t i = 1; i < NUM_ENT_TYPES; i++)
 	{
 		spr_ents[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_ENTITIES[i - 1]);
@@ -216,8 +230,8 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
     // define menu
     mnu_debugvals.rect.x = 0;
     mnu_debugvals.rect.y = 0;
-    mnu_debugvals.rect.w = 640;
-    mnu_debugvals.rect.h = 480;
+    mnu_debugvals.rect.w = cfg->gfx_window_w;
+    mnu_debugvals.rect.h = cfg->gfx_window_h;
 
     SM_String_copy_cstr(&lbl_velocity_x.text, "vel_x:");
     SGUI_Label_update_sprite(&lbl_velocity_x);
@@ -392,14 +406,42 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
         lbl_grounded_val.rect.h = lbl_grounded_val.sprite.surface->h;
 #endif
 
+		// update viewport
+		viewport.x = (player.rect.x + player.rect.w) - (viewport.w / 2);
+		viewport.y = (player.rect.y + player.rect.h) - (viewport.h / 2);
+
+		if (viewport.x < 0)
+			viewport.x = 0;
+
+		else if ((viewport.x + viewport.w) >= (int) (world.width * BLOCK_SIZE))
+			viewport.x = (world.width * BLOCK_SIZE) - viewport.w;
+
+		if (viewport.y < 0)
+			viewport.y = 0;
+
+		else if ((viewport.y + viewport.h) >= (int) (world.height * BLOCK_SIZE))
+			viewport.y = (world.height * BLOCK_SIZE) - viewport.h;
+
+		// update block draw range
+		wld_draw_pts[0].x = (viewport.x / BLOCK_SIZE);
+		wld_draw_pts[0].y = (viewport.y / BLOCK_SIZE);
+
+		wld_draw_pts[1].x = ((viewport.x + viewport.w) / BLOCK_SIZE);
+		wld_draw_pts[1].y = ((viewport.y + viewport.h) / BLOCK_SIZE);
+
+		// set sdl viewport
+		viewport.x *= -1;
+		viewport.y *= -1;
+		SDL_RenderSetViewport(renderer, &viewport);
+
 		// draw background
     	SDL_SetRenderDrawColor(renderer, 155, 219, 245, 255);
     	SDL_RenderClear(renderer);
 
 		// draw walls and blocks
-		for (uint_fast32_t x = 0; x < world.width; x++)
+		for (int x = wld_draw_pts[0].x; x < wld_draw_pts[1].x; x++)
 		{
-    		for (uint_fast32_t y = 0; y < world.height; y++)
+    		for (int y = wld_draw_pts[0].y; y < wld_draw_pts[1].y; y++)
     		{
 				temp.x = x * BLOCK_SIZE;
 				temp.y = y * BLOCK_SIZE;
@@ -432,10 +474,10 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 		}
 
 		// draw player
-		temp.x = (uint32_t) player.rect.x;
-		temp.y = (uint32_t) player.rect.y;
-		temp.w = (uint32_t) player.rect.w;
-		temp.h = (uint32_t) player.rect.h;
+		temp.x = player.rect.x;
+		temp.y = player.rect.y;
+		temp.w = player.rect.w;
+		temp.h = player.rect.h;
 
 		SDL_RenderCopy(
 			renderer,
@@ -448,8 +490,10 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 		SDL_RenderDrawRect(renderer, &player.box);
 
-		// draw debug menu
+		// draw debug menu (deactivate viewport for it)
+		SDL_RenderSetViewport(renderer, NULL);
 		SGUI_Menu_draw(&mnu_debugvals);
+		SDL_RenderSetViewport(renderer, &viewport);
 #endif
 
 		// show drawn image
@@ -461,6 +505,9 @@ void game_run( const char *world_name, SDL_Renderer *renderer )
 	}
 
 	game_clear:
+
+	// reset viewport
+	SDL_RenderSetViewport(renderer, NULL);
 
 	// clear strings
 	SM_String_clear(&msg);

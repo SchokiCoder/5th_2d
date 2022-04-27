@@ -16,13 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "types.h"
 #include "world.h"
 #include "player.h"
-
-typedef struct FPoint
-{
-	float x, y;
-} FPoint ;
 
 bool point_within_box( FPoint *pt, FRect *box )
 {

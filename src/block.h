@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-static const uint32_t BLOCK_SIZE = 32;
+static const int_fast32_t BLOCK_SIZE = 32;
 
 typedef enum Block
 {

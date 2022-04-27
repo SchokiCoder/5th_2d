@@ -97,6 +97,7 @@ struct GameData
 {
 	char *path_world;
 	SDL_Renderer *renderer;
+	Config *cfg;
 };
 
 void btn_start_game_click( void *ptr )
@@ -138,7 +139,7 @@ void btn_chapter1_click( void *ptr )
 {
 	struct GameData *data = (struct GameData*) ptr;
 
-	game_run(data->path_world, data->renderer);
+	game_run(data->path_world, data->renderer, data->cfg);
 }
 
 #include "world.h"
@@ -277,7 +278,8 @@ int main()
     // prep some data
 	struct GameData game_data = {
 		.path_world = "test",
-		.renderer = renderer
+		.renderer = renderer,
+		.cfg = &cfg,
 	};
 
     // enable alpha blending
