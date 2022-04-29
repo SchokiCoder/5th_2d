@@ -190,12 +190,10 @@ void btn_chapter1_click( void *ptr )
 	game_run(data->world_name, data->renderer, data->cfg);
 }
 
-/*
+#include "world.h"
+#include "entity.h"
 void gen_demo_horizontal( void )
 {
-	#include "world.h"
-	#include "entity.h"
-
 	World out = World_new("test", 128, 128);
 
 	out.blocks[0][0] = B_STONE;
@@ -238,15 +236,12 @@ void gen_demo_horizontal( void )
 
 	out.walls[4][4] = B_DIRT;
 
-	out.entities[0].id = E_PLAYER;
-	out.entities[0].rect.x = 2.0f * BLOCK_SIZE;
-	out.entities[0].rect.y = 1.0f * BLOCK_SIZE;
-	out.entities[0].rect.w = DATA_ENTITIES[E_PLAYER].width;
-	out.entities[0].rect.h = DATA_ENTITIES[E_PLAYER].height;
+	out.entities[0].rect.x = 2.0f * (float) BLOCK_SIZE;
+	out.entities[0].rect.y = 1.0f * (float) BLOCK_SIZE;
 
 	World_write(&out);
 	World_clear(&out);
-}*/
+}
 
 int main()
 {

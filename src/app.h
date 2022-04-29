@@ -26,7 +26,7 @@ static const char APP_LICENSE_NOTICE[] =
 	"along with this program.  If not, see <https://www.gnu.org/licenses/>.\n";
 static const char APP_SOURCE[] = "https://github.com/SchokiCoder/chemarium.git";
 #define APP_MAJOR 0
-#define APP_MINOR 2
-#define APP_PATCH 2
+#define APP_MINOR 3
+#define APP_PATCH 0
 
 #endif /* APP_H */

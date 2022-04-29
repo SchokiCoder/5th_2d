@@ -38,7 +38,7 @@ void World_allocate( World *world )
 		world->wall_textures[i] = malloc(world->height * sizeof(SDL_Texture*));
 	}
 
-	world->entities = malloc(world->ent_count * sizeof(Entity));
+	world->entities = malloc(world->ent_count * sizeof(WldEntity));
 }
 
 World World_new( const char *world_name, const size_t width, const size_t height )
@@ -54,10 +54,13 @@ World World_new( const char *world_name, const size_t width, const size_t height
 	// set values
 	World_allocate(&world);
 	world.entities[0].id = E_PLAYER;
-	world.entities[0].rect.x = 0;
-	world.entities[0].rect.y = 0;
+	world.entities[0].rect.x = 0.0f;
+	world.entities[0].rect.y = 0.0f;
 	world.entities[0].rect.w = DATA_ENTITIES[E_PLAYER].width;
 	world.entities[0].rect.h = DATA_ENTITIES[E_PLAYER].height;
+	world.entities[0].grounded = false;
+	world.entities[0].velocity_x = 0.0f;
+	world.entities[0].velocity_y = 0.0f;
 
 	return world;
 }
@@ -116,6 +119,9 @@ World World_from_file( const char *world_name )
 		fread(&world.entities[i].rect.y, sizeof(world.entities[i].rect.y), 1, f);
 		fread(&world.entities[i].rect.w, sizeof(world.entities[i].rect.w), 1, f);
 		fread(&world.entities[i].rect.h, sizeof(world.entities[i].rect.h), 1, f);
+		fread(&world.entities[i].grounded, sizeof(world.entities[i].grounded), 1, f);
+		fread(&world.entities[i].velocity_x, sizeof(world.entities[i].velocity_x), 1, f);
+		fread(&world.entities[i].velocity_y, sizeof(world.entities[i].velocity_y), 1, f);
 	}
 
 	SM_String_clear(&filepath);
@@ -171,6 +177,9 @@ void World_write( World *world )
     	fwrite(&world->entities[i].rect.y, sizeof(world->entities[i].rect.y), 1, f);
     	fwrite(&world->entities[i].rect.w, sizeof(world->entities[i].rect.w), 1, f);
     	fwrite(&world->entities[i].rect.h, sizeof(world->entities[i].rect.h), 1, f);
+    	fwrite(&world->entities[i].grounded, sizeof(world->entities[i].grounded), 1, f);
+		fwrite(&world->entities[i].velocity_x, sizeof(world->entities[i].velocity_x), 1, f);
+		fwrite(&world->entities[i].velocity_y, sizeof(world->entities[i].velocity_y), 1, f);
     }
 
     SM_String_clear(&filepath);
