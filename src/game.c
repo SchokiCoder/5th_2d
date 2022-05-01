@@ -46,6 +46,8 @@ static const char *PATH_TEXTURES_ENTITIES[] = {
 	PATH_TEXTURES_ENTITIES_DIR SLASH "player.png"
 };
 
+static const float TIMESCALE = 1.0f;
+
 #ifdef _DEBUG
 static const SGUI_Theme THEME_DEBUG = {
 	.menu = {
@@ -79,7 +81,9 @@ float now( void )
 	return (float) clock() / (float) CLOCKS_PER_SEC;
 }
 
-void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
+void game_run(
+	const char *world_name, SDL_Renderer *renderer, Config *cfg,
+	const bool edit, const size_t width, const size_t height )
 {
 #ifdef _DEBUG
 	TTF_Font *font;
@@ -510,6 +514,7 @@ void game_run( const char *world_name, SDL_Renderer *renderer, Config *cfg )
 		// timestamp and delta
 		ts2 = now();
 		delta = ts2 - ts1;
+		delta *= TIMESCALE;
 	}
 
 	game_clear:

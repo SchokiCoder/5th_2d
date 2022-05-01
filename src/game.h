@@ -25,6 +25,8 @@ typedef struct Config Config;
 
 float now( void );
 
-void game_run( const char *path_world, SDL_Renderer *renderer, Config *cfg );
+void game_run(
+	const char *world_name, SDL_Renderer *renderer, Config *cfg,
+	const bool edit, const size_t width, const size_t height );
 
 #endif

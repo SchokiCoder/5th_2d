@@ -51,7 +51,7 @@ void Config_load( Config *cfg )
 	// read file
 	SM_Dict dict = SM_Dict_from_file(filepath.str);
 
-	if (!dict.valid)
+	if (dict.invalid)
 	{
 		SM_String_clear(&filepath);
 		cfg->invalid = true;
