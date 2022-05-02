@@ -67,6 +67,7 @@ World World_new( const char *world_name, const size_t width, const size_t height
 
 World World_from_file( const char *world_name )
 {
+	SM_String msg = SM_String_new(8);
 	SM_String filepath = SM_String_new(8);
 	World world = {
 		.invalid = false,
@@ -85,15 +86,32 @@ World World_from_file( const char *world_name )
 	SM_String_append_cstr(&filepath, ".");
 	SM_String_append_cstr(&filepath, FILETYPE_WORLD);
 
-	// open file
-	f = fopen(filepath.str, "r");
-
-	// if file did not open, set flag and stop
-	if (f == NULL)
+	// check file access
+	switch (file_check_access(filepath.str))
 	{
+	case FA_NONE:
+		SM_String_copy_cstr(&msg, "World ");
+		SM_String_append_cstr(&msg, world_name);
+		SM_String_append_cstr(&msg, " does not exist or permissions to read are missing.");
+		SM_log_err(msg.str);
+
 		world.invalid = true;
 		return world;
+		break;
+
+	case FA_READ:
+		SM_String_copy_cstr(&msg, "World ");
+		SM_String_append_cstr(&msg, world_name);
+		SM_String_append_cstr(&msg, " is not permitted to be written to.");
+		SM_log_warn(msg.str);
+		break;
+
+	case FA_WRITE:
+		break;
 	}
+
+	// open file
+	f = fopen(filepath.str, "r");
 
 	// read header
 	fread(&world.width, sizeof(world.width), 1, f);
@@ -124,6 +142,7 @@ World World_from_file( const char *world_name )
 		fread(&world.entities[i].velocity_y, sizeof(world.entities[i].velocity_y), 1, f);
 	}
 
+	SM_String_clear(&msg);
 	SM_String_clear(&filepath);
 	fclose(f);
 	return world;

@@ -21,11 +21,8 @@
 #include <SGUI_sprite.h>
 #include <SGUI_theme.h>
 #include <time.h>
-#include "types.h"
 #include "config.h"
 #include "world.h"
-#include "block.h"
-#include "entity.h"
 #include "game.h"
 
 #ifdef _WIN32
@@ -76,14 +73,117 @@ static const SGUI_Theme THEME_DEBUG = {
 };
 #endif
 
+static const float EDIT_MOVE_SPEED = BLOCK_SIZE * 12;
+static const size_t EDIT_CROSSHAIR_SIZE = 10;
+static const float EDIT_SELECT_DELAY = 0.25f;
+static const float EDIT_SAVE_DELAY = 1.0f;
+
 float now( void )
 {
 	return (float) clock() / (float) CLOCKS_PER_SEC;
 }
 
-void game_run(
-	const char *world_name, SDL_Renderer *renderer, Config *cfg,
-	const bool edit, const size_t width, const size_t height )
+void Game_setup( Game *game )
+{
+	game->active = true;
+	game->msg = SM_String_new(8);
+
+	// set viewport
+	game->camera.x = 0;
+	game->camera.y = 0;
+	game->camera.w = game->cfg->gfx_window_w;
+	game->camera.h = game->cfg->gfx_window_h;
+
+	// init sprites
+	for (uint_fast32_t i = 0; i <= B_LAST; i++)
+	{
+		game->spr_blocks[i] = SGUI_Sprite_new();
+		game->spr_walls[i] = SGUI_Sprite_new();
+	}
+
+	for (uint_fast32_t i = 0; i <= E_LAST; i++)
+		game->spr_ents[i] = SGUI_Sprite_new();
+
+	// open world and check
+	game->world.invalid = false;
+	game->world = World_from_file(game->world_name);
+
+	if (game->world.invalid)
+	{
+		Game_clear(game);
+		return;
+	}
+
+	// load block sprites
+    for (uint_fast32_t i = 1; i <= B_LAST; i++)
+	{
+		game->spr_blocks[i] = SGUI_Sprite_from_file(game->renderer, PATH_TEXTURES_BLOCKS[i - 1]);
+
+		if (game->spr_blocks[i].invalid)
+		{
+			SM_String_copy_cstr(&game->msg, "Sprite ");
+			SM_String_append_cstr(&game->msg, PATH_TEXTURES_BLOCKS[i - 1]);
+			SM_String_append_cstr(&game->msg, " could not be loaded.");
+
+			SM_log_err(game->msg.str);
+			Game_clear(game);
+			return;
+		}
+	}
+
+	// create wall sprites
+    for (uint_fast32_t i = 1; i <= B_LAST; i++)
+    {
+    	// copy block surface, modify, create texture
+    	game->spr_walls[i].invalid = false;
+
+    	game->spr_walls[i].surface = SDL_ConvertSurface(
+    		game->spr_blocks[i].surface, game->spr_blocks[i].surface->format, 0);
+
+		SDL_SetSurfaceColorMod(game->spr_walls[i].surface, 175, 175, 175);
+    	SGUI_Sprite_create_texture(&game->spr_walls[i], game->renderer);
+
+    	// check sprite
+    	if (game->spr_walls[i].invalid)
+    	{
+    		SM_log_err("Wall-sprite could not be generated from block-sprite.");
+    		Game_clear(game);
+    		return;
+		}
+    }
+
+	// load ent sprites
+	for (uint_fast32_t i = 1; i <= E_LAST; i++)
+	{
+		game->spr_ents[i] = SGUI_Sprite_from_file(game->renderer, PATH_TEXTURES_ENTITIES[i - 1]);
+
+		if (game->spr_ents[i].invalid)
+		{
+			SM_String_copy_cstr(&game->msg, "Sprite ");
+			SM_String_append_cstr(&game->msg, PATH_TEXTURES_ENTITIES[i - 1]);
+			SM_String_append_cstr(&game->msg, " could not be loaded.");
+
+			SM_log_err(game->msg.str);
+			Game_clear(game);
+			return;
+		}
+	}
+
+    // map textures
+    for (uint_fast32_t x = 0; x < game->world.width; x++)
+    {
+    	for (uint_fast32_t y = 0; y < game->world.height; y++)
+    	{
+            game->world.block_textures[x][y] = game->spr_blocks[game->world.blocks[x][y]].texture;
+            game->world.wall_textures[x][y] = game->spr_walls[game->world.walls[x][y]].texture;
+		}
+	}
+
+	// set keyboard state pointer
+	game->kbd = SDL_GetKeyboardState(NULL);
+}
+
+void Game_run( Game *game )
 {
 #ifdef _DEBUG
 	TTF_Font *font;
@@ -100,134 +200,37 @@ void game_run(
     SGUI_Label lbl_grounded_val;
 #endif
 
-	SM_String msg = SM_String_new(16);
-	SGUI_Sprite spr_blocks[B_LAST + 1];
-	SGUI_Sprite spr_walls[B_LAST + 1];
-	SGUI_Sprite spr_ents[E_LAST + 1];
-	World world = {.invalid = false};
-	SDL_Event event;
-    IPoint wld_draw_pts[2];
     WldEntity *player = NULL;
-	SDL_Rect viewport;
 	SDL_Rect temp;
-	const uint8_t *kbd;
-	bool game_active = true;
 	float ts1, ts2, delta = 0.0f;
 	float x_step = 0.0f;
 	float y_step = 0.0f;
 
-	// set viewport
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.w = cfg->gfx_window_w;
-	viewport.h = cfg->gfx_window_h;
-
-	// init sprites
-	for (uint_fast32_t i = 0; i <= B_LAST; i++)
-	{
-		spr_blocks[i] = SGUI_Sprite_new();
-		spr_walls[i] = SGUI_Sprite_new();
-	}
-
-	for (uint_fast32_t i = 0; i <= E_LAST; i++)
-		spr_ents[i] = SGUI_Sprite_new();
-
-	// open world and check
-	world = World_from_file(world_name);
-
-	if (world.invalid)
-	{
-		SM_String_copy_cstr(&msg, "World ");
-		SM_String_append_cstr(&msg, world_name);
-		SM_String_append_cstr(&msg, " is corrupt.");
-
-		SM_log_err(msg.str);
-		goto game_clear;
-	}
+	// setup
+	Game_setup(game);
 
 	// set 1st player of world as player
-	for (size_t i = 0; i < world.ent_count; i++)
-		if (world.entities[i].id == E_PLAYER)
-			player = &world.entities[i];
+	for (size_t i = 0; i < game->world.ent_count; i++)
+		if (game->world.entities[i].id == E_PLAYER)
+			player = &game->world.entities[i];
 
 	if (player == NULL)
 	{
-		SM_String_copy_cstr(&msg, "World ");
-		SM_String_append_cstr(&msg, world_name);
-		SM_String_append_cstr(&msg, " does not contain a player entity.");
+		SM_String_copy_cstr(&game->msg, "World ");
+		SM_String_append_cstr(&game->msg, game->world_name);
+		SM_String_append_cstr(&game->msg, " does not contain a player entity.");
+		SM_log_err(game->msg.str);
 
-		SM_log_err(msg.str);
-		goto game_clear;
+		Game_clear(game);
+		return;
 	}
-
-	// load block sprites
-    for (uint_fast32_t i = 1; i <= B_LAST; i++)
-	{
-		spr_blocks[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_BLOCKS[i - 1]);
-
-		if (spr_blocks[i].invalid)
-		{
-			SM_String_copy_cstr(&msg, "Sprite ");
-			SM_String_append_cstr(&msg, PATH_TEXTURES_BLOCKS[i - 1]);
-			SM_String_append_cstr(&msg, " could not be loaded.");
-
-			SM_log_err(msg.str);
-			goto game_clear;
-		}
-	}
-
-	// create wall sprites
-    for (uint_fast32_t i = 1; i <= B_LAST; i++)
-    {
-    	// copy block surface, modify, create texture
-    	spr_walls[i].invalid = false;
-    	spr_walls[i].surface = SDL_ConvertSurface(spr_blocks[i].surface, spr_blocks[i].surface->format, 0);
-		SDL_SetSurfaceColorMod(spr_walls[i].surface, 175, 175, 175);
-    	SGUI_Sprite_create_texture(&spr_walls[i], renderer);
-
-    	// check sprite
-    	if (spr_walls[i].invalid)
-    	{
-    		SM_log_err("Wall-sprite could not be generated from block-sprite.");
-    		goto game_clear;
-		}
-    }
-
-	// load ent sprites
-	for (uint_fast32_t i = 1; i <= E_LAST; i++)
-	{
-		spr_ents[i] = SGUI_Sprite_from_file(renderer, PATH_TEXTURES_ENTITIES[i - 1]);
-
-		if (spr_ents[i].invalid)
-		{
-			SM_String_copy_cstr(&msg, "Sprite ");
-			SM_String_append_cstr(&msg, PATH_TEXTURES_ENTITIES[i - 1]);
-			SM_String_append_cstr(&msg, " could not be loaded.");
-
-			SM_log_err(msg.str);
-			goto game_clear;
-		}
-	}
-
-    // map textures
-    for (uint_fast32_t x = 0; x < world.width; x++)
-    {
-    	for (uint_fast32_t y = 0; y < world.height; y++)
-    	{
-            world.block_textures[x][y] = spr_blocks[world.blocks[x][y]].texture;
-            world.wall_textures[x][y] = spr_walls[world.walls[x][y]].texture;
-		}
-	}
-
-	// set keyboard state pointer
-	kbd = SDL_GetKeyboardState(NULL);
 
 #ifdef _DEBUG
 	// load font
     font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 16);
 
 	// make debug values menu
-	mnu_debugvals = SGUI_Menu_new(renderer, THEME_DEBUG.menu);
+	mnu_debugvals = SGUI_Menu_new(game->renderer, THEME_DEBUG.menu);
     SGUI_Label_new(&lbl_velocity_x, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_velocity_x_val, &mnu_debugvals, font, THEME_DEBUG.label);
     SGUI_Label_new(&lbl_velocity_y, &mnu_debugvals, font, THEME_DEBUG.label);
@@ -242,8 +245,8 @@ void game_run(
     // define menu
     mnu_debugvals.rect.x = 0;
     mnu_debugvals.rect.y = 0;
-    mnu_debugvals.rect.w = cfg->gfx_window_w;
-    mnu_debugvals.rect.h = cfg->gfx_window_h;
+    mnu_debugvals.rect.w = game->cfg->gfx_window_w;
+    mnu_debugvals.rect.h = game->cfg->gfx_window_h;
 
     SM_String_copy_cstr(&lbl_velocity_x.text, "vel_x:");
     SGUI_Label_update_sprite(&lbl_velocity_x);
@@ -317,24 +320,24 @@ void game_run(
 #endif
 
 	// mainloop
-    while (game_active)
+    while (game->active)
     {
 		ts1 = now();
 
 		// process events
-		while (SDL_PollEvent(&event))
+		while (SDL_PollEvent(&game->event))
 		{
 			// app events
-			switch (event.type)
+			switch (game->event.type)
 			{
 			case SDL_QUIT:
-				game_active = false;
+				game->active = false;
                 break;
 			}
 		}
 
 		// handle keyboard
-		if (kbd[SDL_SCANCODE_A])
+		if (game->kbd[SDL_SCANCODE_A])
 		{
 			player->velocity_x -= DATA_ENTITIES[E_PLAYER].acceleration * delta;
 
@@ -342,7 +345,7 @@ void game_run(
 				player->velocity_x = DATA_ENTITIES[E_PLAYER].max_velocity * -1;
 		}
 
-		if (kbd[SDL_SCANCODE_D])
+		if (game->kbd[SDL_SCANCODE_D])
 		{
 			player->velocity_x += DATA_ENTITIES[E_PLAYER].acceleration * delta;
 
@@ -350,7 +353,7 @@ void game_run(
 				player->velocity_x = DATA_ENTITIES[E_PLAYER].max_velocity;
 		}
 
-		if (kbd[SDL_SCANCODE_SPACE])
+		if (game->kbd[SDL_SCANCODE_SPACE])
 		{
 			if (player->grounded)
 				player->velocity_y -= DATA_ENTITIES[E_PLAYER].jump_velocity;
@@ -376,13 +379,13 @@ void game_run(
 		if (player->velocity_x != 0.0f)
 		{
 			x_step = player->velocity_x * delta;
-			WldEntity_move_x(player, x_step, &world);
+			WldEntity_move_x(player, x_step, &game->world);
 		}
 
 		if (player->velocity_y != 0.0f)
 		{
 			y_step = player->velocity_y * delta;
-			WldEntity_move_y(player, y_step, &world);
+			WldEntity_move_y(player, y_step, &game->world);
 		}
 
 #ifdef _DEBUG
@@ -419,65 +422,60 @@ void game_run(
 #endif
 
 		// update viewport
-		viewport.x = (player->rect.x + player->rect.w) - (viewport.w / 2);
-		viewport.y = (player->rect.y + player->rect.h) - (viewport.h / 2);
+		game->camera.x = (player->rect.x + player->rect.w) - (game->camera.w / 2);
+		game->camera.y = (player->rect.y + player->rect.h) - (game->camera.h / 2);
 
-		if (viewport.x < 0)
-			viewport.x = 0;
+		if (game->camera.x < 0)
+			game->camera.x = 0;
 
-		else if ((viewport.x + viewport.w) >= (int) (world.width * BLOCK_SIZE))
-			viewport.x = (world.width * BLOCK_SIZE) - viewport.w;
+		else if ((game->camera.x + game->camera.w) >= (int) (game->world.width * BLOCK_SIZE))
+			game->camera.x = (game->world.width * BLOCK_SIZE) - game->camera.w;
 
-		if (viewport.y < 0)
-			viewport.y = 0;
+		if (game->camera.y < 0)
+			game->camera.y = 0;
 
-		else if ((viewport.y + viewport.h) >= (int) (world.height * BLOCK_SIZE))
-			viewport.y = (world.height * BLOCK_SIZE) - viewport.h;
+		else if ((game->camera.y + game->camera.h) >= (int) (game->world.height * BLOCK_SIZE))
+			game->camera.y = (game->world.height * BLOCK_SIZE) - game->camera.h;
 
 		// update block draw range
-		wld_draw_pts[0].x = (viewport.x / BLOCK_SIZE);
-		wld_draw_pts[0].y = (viewport.y / BLOCK_SIZE);
+		game->wld_draw_pts[0].x = (game->camera.x / BLOCK_SIZE);
+		game->wld_draw_pts[0].y = (game->camera.y / BLOCK_SIZE);
 
-		wld_draw_pts[1].x = ((viewport.x + viewport.w) / BLOCK_SIZE);
-		wld_draw_pts[1].y = ((viewport.y + viewport.h) / BLOCK_SIZE);
-
-		// set sdl viewport
-		viewport.x *= -1;
-		viewport.y *= -1;
-		SDL_RenderSetViewport(renderer, &viewport);
+		game->wld_draw_pts[1].x = ((game->camera.x + game->camera.w) / BLOCK_SIZE);
+		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE);
 
 		// draw background
-    	SDL_SetRenderDrawColor(renderer, 155, 219, 245, 255);
-    	SDL_RenderClear(renderer);
+    	SDL_SetRenderDrawColor(game->renderer, 155, 219, 245, 255);
+    	SDL_RenderClear(game->renderer);
 
 		// draw walls and blocks
-		for (int x = wld_draw_pts[0].x; x < wld_draw_pts[1].x; x++)
+		for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
 		{
-    		for (int y = wld_draw_pts[0].y; y < wld_draw_pts[1].y; y++)
+    		for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
     		{
-				temp.x = x * BLOCK_SIZE;
-				temp.y = y * BLOCK_SIZE;
+				temp.x = (x * BLOCK_SIZE) - game->camera.x;
+				temp.y = (y * BLOCK_SIZE) - game->camera.y;
 				temp.w = BLOCK_SIZE;
 				temp.h = BLOCK_SIZE;
 
 				SDL_RenderCopy(
-					renderer,
-					world.wall_textures[x][y],
+					game->renderer,
+					game->world.wall_textures[x][y],
 					NULL,
 					&temp);
 
 				SDL_RenderCopy(
-					renderer,
-					world.block_textures[x][y],
+					game->renderer,
+					game->world.block_textures[x][y],
 					NULL,
 					&temp);
 			}
 		}
 
 		// draw entities
-		for (size_t i = 0; i < world.ent_count; i++)
+		for (size_t i = 0; i < game->world.ent_count; i++)
 		{
-            switch (world.entities[i].id)
+            switch (game->world.entities[i].id)
             {
             case E_NONE:
             case E_PLAYER:
@@ -486,30 +484,32 @@ void game_run(
 		}
 
 		// draw player
-		temp.x = player->rect.x;
-		temp.y = player->rect.y;
+		temp.x = player->rect.x - game->camera.x;
+		temp.y = player->rect.y - game->camera.y;
 		temp.w = player->rect.w;
 		temp.h = player->rect.h;
 
 		SDL_RenderCopy(
-			renderer,
-			spr_ents[E_PLAYER].texture,
+			game->renderer,
+			game->spr_ents[E_PLAYER].texture,
 			NULL,
 			&temp);
 
 #ifdef _DEBUG
-		// and optical collision box (not actual hitbox)
-		SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-		SDL_RenderDrawRect(renderer, &player->box);
+		// and optical collision check box (not actual hitbox)
+		temp = player->box;
+		temp.x -= game->camera.x;
+		temp.y -= game->camera.y;
 
-		// draw debug menu (deactivate viewport for it)
-		SDL_RenderSetViewport(renderer, NULL);
+		SDL_SetRenderDrawColor(game->renderer, 255, 0, 0, 255);
+		SDL_RenderDrawRect(game->renderer, &temp);
+
+		// draw debug menu
 		SGUI_Menu_draw(&mnu_debugvals);
-		SDL_RenderSetViewport(renderer, &viewport);
 #endif
 
 		// show drawn image
-		SDL_RenderPresent(renderer);
+		SDL_RenderPresent(game->renderer);
 
 		// timestamp and delta
 		ts2 = now();
@@ -517,26 +517,247 @@ void game_run(
 		delta *= TIMESCALE;
 	}
 
-	game_clear:
+	// clear
+	Game_clear(game);
+}
 
+void Game_edit( Game *game, const size_t width, const size_t height )
+{
+    float edit_move_speed;
+    SDL_Rect temp;
+    FPoint edit_pos = {
+    	.x = 0.0f,
+    	.y = 0.0f,
+    };
+    SDL_Rect edit_pt = {
+    	.x = 0,
+    	.y = 0,
+    };
+    bool edit_set_block = true;
+    Block edit_block = B_FIRST;
+	float ts1, ts2, delta = 0.0f;
+	float ts_ui_event;
+
+    // if world does not yet exist, create
+    #warning
+
+    // setup
+    Game_setup(game);
+
+    // mainloop
+	while (game->active)
+	{
+		ts1 = now();
+
+		// process events
+		while (SDL_PollEvent(&game->event))
+		{
+			// app events
+			switch (game->event.type)
+			{
+			case SDL_QUIT:
+				game->active = false;
+                break;
+			}
+		}
+
+		// handle keyboard, movement
+		if (game->kbd[SDL_SCANCODE_LSHIFT])
+			edit_move_speed = EDIT_MOVE_SPEED * 6.0f;
+
+		else if (game->kbd[SDL_SCANCODE_LCTRL])
+			edit_move_speed = EDIT_MOVE_SPEED * 0.25f;
+
+		else
+			edit_move_speed = EDIT_MOVE_SPEED;
+
+		if (game->kbd[SDL_SCANCODE_W])
+			edit_pos.y -= edit_move_speed * delta;
+
+		if (game->kbd[SDL_SCANCODE_A])
+			edit_pos.x -= edit_move_speed * delta;
+
+		if (game->kbd[SDL_SCANCODE_S])
+			edit_pos.y += edit_move_speed * delta;
+
+		if (game->kbd[SDL_SCANCODE_D])
+			edit_pos.x += edit_move_speed * delta;
+
+		// calc edit_pos world coord
+		edit_pt.x = edit_pos.x / BLOCK_SIZE;
+		edit_pt.y = edit_pos.y / BLOCK_SIZE;
+
+		// keys with select delay
+		if (now() > ts_ui_event + EDIT_SELECT_DELAY)
+		{
+			// arrow (left, right), select block
+			if (game->kbd[SDL_SCANCODE_LEFT])
+			{
+				if (edit_block > B_FIRST)
+				{
+					edit_block--;
+					ts_ui_event = now();
+				}
+			}
+
+			if (game->kbd[SDL_SCANCODE_RIGHT])
+			{
+				if (edit_block < B_LAST)
+				{
+					edit_block++;
+					ts_ui_event = now();
+				}
+			}
+
+			// arrow (up, down), select layer
+			if (game->kbd[SDL_SCANCODE_UP] ||
+				game->kbd[SDL_SCANCODE_DOWN])
+			{
+				edit_set_block = !edit_set_block;
+				ts_ui_event = now();
+			}
+		}
+
+		// keys with save delay
+		if (now() > ts_ui_event + EDIT_SAVE_DELAY)
+		{
+			// ctrl + s, save
+			if (game->kbd[SDL_SCANCODE_LCTRL] &&
+				game->kbd[SDL_SCANCODE_S])
+			{
+				World_write(&game->world);
+				ts_ui_event = now();
+			}
+
+			// ctrl + q, quit
+			if (game->kbd[SDL_SCANCODE_LCTRL] &&
+				game->kbd[SDL_SCANCODE_Q])
+			{
+				game->active = false;
+				ts_ui_event = now();
+			}
+		}
+
+		// space, set block
+		if (game->kbd[SDL_SCANCODE_SPACE])
+		{
+            if (edit_set_block)
+            {
+            	game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
+            	game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
+			}
+			else
+			{
+                game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
+            	game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
+			}
+		}
+
+		// update viewport
+		game->camera.x = edit_pos.x - (game->camera.w / 2);
+		game->camera.y = edit_pos.y - (game->camera.h / 2);
+
+		if (game->camera.x < 0)
+			game->camera.x = 0;
+
+		else if ((game->camera.x + game->camera.w) >= (int) (game->world.width * BLOCK_SIZE))
+			game->camera.x = (game->world.width * BLOCK_SIZE) - game->camera.w;
+
+		if (game->camera.y < 0)
+			game->camera.y = 0;
+
+		else if ((game->camera.y + game->camera.h) >= (int) (game->world.height * BLOCK_SIZE))
+			game->camera.y = (game->world.height * BLOCK_SIZE) - game->camera.h;
+
+		// update block draw range
+		game->wld_draw_pts[0].x = (game->camera.x / BLOCK_SIZE);
+		game->wld_draw_pts[0].y = (game->camera.y / BLOCK_SIZE);
+
+		game->wld_draw_pts[1].x = ((game->camera.x + game->camera.w) / BLOCK_SIZE);
+		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE);
+
+		// draw background
+    	SDL_SetRenderDrawColor(game->renderer, 155, 219, 245, 255);
+    	SDL_RenderClear(game->renderer);
+
+    	// draw walls blocks and grid
+    	SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 50);
+
+		for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
+		{
+    		for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
+    		{
+				temp.x = (x * BLOCK_SIZE) - game->camera.x;
+				temp.y = (y * BLOCK_SIZE) - game->camera.y;
+				temp.w = BLOCK_SIZE;
+				temp.h = BLOCK_SIZE;
+
+				SDL_RenderCopy(
+					game->renderer,
+					game->world.wall_textures[x][y],
+					NULL,
+					&temp);
+
+				SDL_RenderCopy(
+					game->renderer,
+					game->world.block_textures[x][y],
+					NULL,
+					&temp);
+
+				SDL_RenderDrawRect(
+					game->renderer,
+					&temp);
+			}
+		}
+
+		// draw edit pos as crosshair
+		SDL_SetRenderDrawColor(game->renderer, 255, 0, 0, 255);
+		SDL_RenderDrawLine(
+			game->renderer,
+			edit_pos.x - EDIT_CROSSHAIR_SIZE - game->camera.x,
+			edit_pos.y - game->camera.y,
+			edit_pos.x + EDIT_CROSSHAIR_SIZE - game->camera.x,
+			edit_pos.y - game->camera.y );
+
+		SDL_RenderDrawLine(
+			game->renderer,
+			edit_pos.x - game->camera.x,
+			edit_pos.y - EDIT_CROSSHAIR_SIZE - game->camera.y,
+			edit_pos.x - game->camera.x,
+			edit_pos.y + EDIT_CROSSHAIR_SIZE - game->camera.y);
+
+		// show drawn image
+		SDL_RenderPresent(game->renderer);
+
+		// timestamp and delta
+		ts2 = now();
+		delta = ts2 - ts1;
+	}
+
+	// clear
+    Game_clear(game);
+}
+
+void Game_clear( Game *game )
+{
 	// reset viewport
-	SDL_RenderSetViewport(renderer, NULL);
+	SDL_RenderSetViewport(game->renderer, NULL);
 
-	// clear strings
-	SM_String_clear(&msg);
-
-	// clear sprites
+	// sprites
     for (uint_fast32_t i = 1; i <= B_LAST; i++)
     {
-    	SGUI_Sprite_clear(&spr_blocks[i]);
-    	SGUI_Sprite_clear(&spr_walls[i]);
+    	SGUI_Sprite_clear(&game->spr_blocks[i]);
+    	SGUI_Sprite_clear(&game->spr_walls[i]);
     }
 
     for (uint_fast32_t i = 1; i <= E_LAST; i++)
     {
-    	SGUI_Sprite_clear(&spr_ents[i]);
+    	SGUI_Sprite_clear(&game->spr_ents[i]);
 	}
 
-	// clear world
-	World_clear(&world);
+	// world
+	World_clear(&game->world);
+
+	// string
+	SM_String_clear(&game->msg);
 }

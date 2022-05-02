@@ -141,17 +141,9 @@ typedef struct BtnSettingsData
     SGUI_Entry *txt_gfx_window_fullscreen;
 } BtnSettingsData ;
 
-typedef struct GameData
-{
-	char *world_name;
-	SDL_Renderer *renderer;
-	Config *cfg;
-} GameData ;
-
 typedef struct BtnStartEditData
 {
-    SDL_Renderer *renderer;
-    Config *cfg;
+    Game game;
 
     SGUI_Entry *txt_edit_name;
     SGUI_Entry *txt_edit_width;
@@ -265,9 +257,9 @@ void btn_license_close_click( void *ptr )
 
 void btn_chapter1_click( void *ptr )
 {
-	GameData *data = (GameData*) ptr;
+	Game *data = (Game*) ptr;
 
-	game_run(data->world_name, data->renderer, data->cfg, false, 0, 0);
+	Game_run(data);
 }
 
 void btn_start_edit_click( void *ptr )
@@ -279,9 +271,10 @@ void btn_start_edit_click( void *ptr )
     // parse input
 	world_width = strtoul(data->txt_edit_width->text.str, NULL, 10);
 	world_height = strtoul(data->txt_edit_height->text.str, NULL, 10);
+	data->game.world_name = data->txt_edit_name->text.str;
 
     // start editor
-    game_run(data->txt_edit_name->text.str, data->renderer, data->cfg, true, world_width, world_height);
+    Game_edit(&data->game, world_width, world_height);
 }
 
 #include "entity.h"
@@ -465,15 +458,17 @@ int main()
     }
 
     // game data
-    GameData game_data = {
+    Game game = {
 		.world_name = "test",
 		.renderer = renderer,
 		.cfg = &cfg,
 	};
 
 	BtnStartEditData btn_start_edit_data = {
-		.renderer = renderer,
-		.cfg = &cfg,
+		.game = {
+			.renderer = renderer,
+			.cfg = &cfg,
+		},
 		.txt_edit_name = &txt_edit_name,
 		.txt_edit_width = &txt_edit_width,
 		.txt_edit_height = &txt_edit_height,
@@ -541,7 +536,7 @@ int main()
     SM_String_copy_cstr(&btn_version.text, temp);
     sprintf(temp, "%u.", APP_MINOR);
     SM_String_append_cstr(&btn_version.text, temp);
-    sprintf(temp, "%u.", APP_PATCH);
+    sprintf(temp, "%u", APP_PATCH);
     SM_String_append_cstr(&btn_version.text, temp);
     SGUI_Button_update_sprite(&btn_version);
     btn_version.rect.w = btn_version.sprite.surface->w;
@@ -616,7 +611,7 @@ int main()
     btn_chapter1.rect.x = mnu_start_game.rect.x;
     btn_chapter1.rect.y = btn_start_game_close.rect.y + btn_start_game_close.rect.h;
     btn_chapter1.func_click = btn_chapter1_click;
-    btn_chapter1.data_click = &game_data;
+    btn_chapter1.data_click = &game;
 
     // mnu_editor
     mnu_editor.rect.x = MNU_SUB_X;

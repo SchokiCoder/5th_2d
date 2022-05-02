@@ -39,4 +39,11 @@ typedef struct FRect
 	float h;
 } FRect ;
 
+typedef enum FileAccess
+{
+	FA_NONE = 0,
+	FA_READ = 1,
+	FA_WRITE = 2,
+} FileAccess ;
+
 #endif // TYPES_H

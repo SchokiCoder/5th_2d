@@ -29,7 +29,8 @@ typedef enum Block
 	B_DIRT,
 	B_STONE,
 
-	B_LAST = B_STONE
+	B_FIRST = B_NONE,
+	B_LAST = B_STONE,
 } Block ;
 
 #endif /* BLOCK_H */

@@ -34,7 +34,7 @@ typedef enum Entity
 	E_NONE,
 	E_PLAYER,
 
-	E_LAST = E_PLAYER
+	E_LAST = E_PLAYER,
 } Entity ;
 
 typedef struct EntityData
