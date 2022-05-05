@@ -21,6 +21,7 @@
 #include <SGUI_sprite.h>
 #include <SGUI_theme.h>
 #include <time.h>
+#include "path.h"
 #include "config.h"
 #include "world.h"
 #include "game.h"
@@ -523,8 +524,11 @@ void Game_run( Game *game )
 
 void Game_edit( Game *game, const size_t width, const size_t height )
 {
+    SM_String filepath = SM_String_new(8);
     float edit_move_speed;
     SDL_Rect temp;
+    uint32_t mouse_state;
+    SDL_Rect mouse_pos;
     FPoint edit_pos = {
     	.x = 0.0f,
     	.y = 0.0f,
@@ -533,13 +537,38 @@ void Game_edit( Game *game, const size_t width, const size_t height )
     	.x = 0,
     	.y = 0,
     };
-    bool edit_set_block = true;
     Block edit_block = B_FIRST;
 	float ts1, ts2, delta = 0.0f;
 	float ts_ui_event;
+	bool edit_draw_grid = true;
+	bool edit_draw_blocks = true;
+	bool edit_draw_walls = true;
 
     // if world does not yet exist, create
-    #warning
+	if (get_world_path(&filepath) != 0)
+		return;
+
+	SM_String_append_cstr(&filepath, game->world_name);
+	SM_String_append_cstr(&filepath, ".");
+	SM_String_append_cstr(&filepath, FILETYPE_WORLD);
+
+    if (file_check_existence(filepath.str) == false)
+    {
+		game->world = World_new(game->world_name, width, height);
+
+		for (size_t x = 0; x < game->world.width; x++)
+		{
+			for (size_t y = 0; y < game->world.height; y++)
+			{
+				game->world.blocks[x][y] = B_NONE;
+				game->world.walls[x][y] = B_NONE;
+			}
+		}
+
+        World_write(&game->world);
+
+        World_clear(&game->world);
+    }
 
     // setup
     Game_setup(game);
@@ -555,6 +584,47 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 			// app events
 			switch (game->event.type)
 			{
+			case SDL_KEYDOWN:
+			case SDL_MOUSEMOTION:
+			case SDL_MOUSEBUTTONDOWN:
+				// get mouse state
+				mouse_state = SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
+
+				// calc edit_pos world coord
+				edit_pt.x = (game->camera.x + mouse_pos.x) / BLOCK_SIZE;
+				edit_pt.y = (game->camera.y + mouse_pos.y) / BLOCK_SIZE;
+
+				// if left click, edit block
+				if (mouse_state & SDL_BUTTON_LMASK)
+				{
+					game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
+            		game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
+				}
+
+				// if right click, edit wall
+				else if (mouse_state & SDL_BUTTON_RMASK)
+				{
+					game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
+            		game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
+				}
+				break;
+
+			case SDL_MOUSEWHEEL:
+				//select block
+				if (game->event.wheel.y > 0)
+				{
+					if (edit_block < B_LAST)
+						edit_block++;
+				}
+
+                else if (game->event.wheel.y < 0)
+                {
+					if (edit_block > B_FIRST)
+						edit_block--;
+				}
+
+				break;
+
 			case SDL_QUIT:
 				game->active = false;
                 break;
@@ -609,11 +679,22 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 				}
 			}
 
-			// arrow (up, down), select layer
-			if (game->kbd[SDL_SCANCODE_UP] ||
-				game->kbd[SDL_SCANCODE_DOWN])
+			// drawing control
+			if (game->kbd[SDL_SCANCODE_F1])
 			{
-				edit_set_block = !edit_set_block;
+				edit_draw_grid = !edit_draw_grid;
+				ts_ui_event = now();
+			}
+
+			if (game->kbd[SDL_SCANCODE_F2])
+			{
+				edit_draw_blocks = !edit_draw_blocks;
+				ts_ui_event = now();
+			}
+
+			if (game->kbd[SDL_SCANCODE_F3])
+			{
+				edit_draw_walls = !edit_draw_walls;
 				ts_ui_event = now();
 			}
 		}
@@ -638,19 +719,18 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 			}
 		}
 
-		// space, set block
-		if (game->kbd[SDL_SCANCODE_SPACE])
+		// arrow up, set wall
+		if (game->kbd[SDL_SCANCODE_DOWN])
 		{
-            if (edit_set_block)
-            {
-            	game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
-            	game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
-			}
-			else
-			{
-                game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
-            	game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
-			}
+			game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
+            game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
+		}
+
+		// arrow down, set block
+		if (game->kbd[SDL_SCANCODE_UP])
+		{
+            game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
+            game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
 		}
 
 		// update viewport
@@ -677,36 +757,69 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE);
 
 		// draw background
-    	SDL_SetRenderDrawColor(game->renderer, 155, 219, 245, 255);
+    	SDL_SetRenderDrawColor(game->renderer, 50, 50, 50, 255);
     	SDL_RenderClear(game->renderer);
 
-    	// draw walls blocks and grid
-    	SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 50);
-
-		for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
+    	// if enabled, draw walls
+		if (edit_draw_walls)
 		{
-    		for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
-    		{
-				temp.x = (x * BLOCK_SIZE) - game->camera.x;
-				temp.y = (y * BLOCK_SIZE) - game->camera.y;
-				temp.w = BLOCK_SIZE;
-				temp.h = BLOCK_SIZE;
+			for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
+			{
+				for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
+				{
+					temp.x = (x * BLOCK_SIZE) - game->camera.x;
+					temp.y = (y * BLOCK_SIZE) - game->camera.y;
+					temp.w = BLOCK_SIZE;
+					temp.h = BLOCK_SIZE;
 
-				SDL_RenderCopy(
-					game->renderer,
-					game->world.wall_textures[x][y],
-					NULL,
-					&temp);
+					SDL_RenderCopy(
+						game->renderer,
+						game->world.wall_textures[x][y],
+						NULL,
+						&temp);
+				}
+			}
+		}
 
-				SDL_RenderCopy(
-					game->renderer,
-					game->world.block_textures[x][y],
-					NULL,
-					&temp);
+		// if enabled, draw blocks
+		if (edit_draw_blocks)
+		{
+			for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
+			{
+				for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
+				{
+					temp.x = (x * BLOCK_SIZE) - game->camera.x;
+					temp.y = (y * BLOCK_SIZE) - game->camera.y;
+					temp.w = BLOCK_SIZE;
+					temp.h = BLOCK_SIZE;
 
-				SDL_RenderDrawRect(
-					game->renderer,
-					&temp);
+					SDL_RenderCopy(
+						game->renderer,
+						game->world.block_textures[x][y],
+						NULL,
+						&temp);
+				}
+			}
+		}
+
+		// if enabled, draw grid
+		if (edit_draw_grid)
+		{
+			SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 50);
+
+			for (int x = game->wld_draw_pts[0].x; x < game->wld_draw_pts[1].x; x++)
+			{
+				for (int y = game->wld_draw_pts[0].y; y < game->wld_draw_pts[1].y; y++)
+				{
+					temp.x = (x * BLOCK_SIZE) - game->camera.x;
+					temp.y = (y * BLOCK_SIZE) - game->camera.y;
+					temp.w = BLOCK_SIZE;
+					temp.h = BLOCK_SIZE;
+
+					SDL_RenderDrawRect(
+						game->renderer,
+						&temp);
+				}
 			}
 		}
 
@@ -725,6 +838,34 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 			edit_pos.y - EDIT_CROSSHAIR_SIZE - game->camera.y,
 			edit_pos.x - game->camera.x,
 			edit_pos.y + EDIT_CROSSHAIR_SIZE - game->camera.y);
+
+		// draw currently selected block (border)
+		temp.x = BLOCK_SIZE;
+		temp.y = 0;
+		temp.w = 2;
+		temp.h = BLOCK_SIZE + 2;
+
+        SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
+        SDL_RenderFillRect(game->renderer, &temp);
+
+        temp.x = 0;
+		temp.y = BLOCK_SIZE;
+		temp.w = BLOCK_SIZE + 2;
+		temp.h = 2;
+
+        SDL_RenderFillRect(game->renderer, &temp);
+
+        // (block)
+        temp.x = 0;
+		temp.y = 0;
+		temp.w = BLOCK_SIZE;
+		temp.h = BLOCK_SIZE;
+
+        SDL_RenderCopy(
+			game->renderer,
+			game->spr_blocks[edit_block].texture,
+			NULL,
+			&temp);
 
 		// show drawn image
 		SDL_RenderPresent(game->renderer);

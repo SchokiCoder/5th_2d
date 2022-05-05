@@ -87,9 +87,9 @@ World World_from_file( const char *world_name )
 	SM_String_append_cstr(&filepath, FILETYPE_WORLD);
 
 	// check file access
-	switch (file_check_access(filepath.str))
+	if (file_check_existence(filepath.str) == false)
 	{
-	case FA_NONE:
+
 		SM_String_copy_cstr(&msg, "World ");
 		SM_String_append_cstr(&msg, world_name);
 		SM_String_append_cstr(&msg, " does not exist or permissions to read are missing.");
@@ -97,17 +97,6 @@ World World_from_file( const char *world_name )
 
 		world.invalid = true;
 		return world;
-		break;
-
-	case FA_READ:
-		SM_String_copy_cstr(&msg, "World ");
-		SM_String_append_cstr(&msg, world_name);
-		SM_String_append_cstr(&msg, " is not permitted to be written to.");
-		SM_log_warn(msg.str);
-		break;
-
-	case FA_WRITE:
-		break;
 	}
 
 	// open file

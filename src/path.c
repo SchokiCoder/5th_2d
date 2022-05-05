@@ -108,7 +108,7 @@ int32_t get_config_path( SM_String *out )
 	return 0;
 }
 
-FileAccess file_check_access( const char *restrict path )
+FileAccess file_check_access( const char *path )
 {
 	// check for write access
 	FILE *f = fopen(path, "a");
@@ -130,4 +130,16 @@ FileAccess file_check_access( const char *restrict path )
 
 	// no access
 	return FA_NONE;
+}
+
+bool file_check_existence( const char *path )
+{
+    FILE *f = fopen(path, "r");
+
+    if (f == NULL)
+		return false;
+
+	fclose(f);
+
+	return true;
 }

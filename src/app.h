@@ -23,7 +23,7 @@ static const char APP_NAME[] = "Chemarium";
 static const char APP_LICENSE[] = "GPLv3";
 static const char APP_SOURCE[] = "https://github.com/SchokiCoder/chemarium.git";
 #define APP_MAJOR 0
-#define APP_MINOR 3
+#define APP_MINOR 4
 #define APP_PATCH 0
 
 #endif /* APP_H */

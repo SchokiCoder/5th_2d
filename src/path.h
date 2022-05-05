@@ -20,6 +20,7 @@
 #define PATH_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <SM_string.h>
 #include "types.h"
 
@@ -42,6 +43,8 @@ int32_t get_world_path( SM_String *out );
 
 int32_t get_config_path( SM_String *out );
 
-FileAccess file_check_access( const char *restrict path );
+FileAccess file_check_access( const char *path );
+
+bool file_check_existence( const char *path );
 
 #endif /* PATH_H */
