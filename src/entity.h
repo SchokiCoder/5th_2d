@@ -19,12 +19,8 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include <SDL.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include "types.h"
+#include <SG_entity.h>
 #include "block.h"
-#include "world.h"
 
 static const float ENTITY_VELOCITY_THRESHOLD = 0.01f;
 static const float ENTITY_GRAVITY = BLOCK_SIZE * 18;
@@ -37,18 +33,7 @@ typedef enum Entity
 	E_LAST = E_PLAYER,
 } Entity ;
 
-typedef struct EntityData
-{
-	char *name;
-	size_t width;
-	size_t height;
-	float acceleration;
-	float max_velocity;
-	float decceleration;
-	float jump_velocity;
-} EntityData ;
-
-static const EntityData DATA_ENTITIES[] = {
+static const SG_EntityData DATA_ENTITIES[] = {
 	{
 	.name = "none",
 	.width = 0,
@@ -70,20 +55,8 @@ static const EntityData DATA_ENTITIES[] = {
 	},
 };
 
-typedef struct WldEntity
-{
-	Entity id;
-    FRect rect;		// actual hitbox
-    float velocity_x, velocity_y;
-    bool grounded;
+void Entity_move_x( SG_Entity *ent, float x_distance, SG_World *world );
 
-#ifdef _DEBUG
-    SDL_Rect box;	// optical box in which collision checks with blocks happen
-#endif
-} WldEntity ;
-
-void WldEntity_move_x( WldEntity *wldent, float x_distance, World *world );
-
-void WldEntity_move_y( WldEntity *wldent, float y_distance, World *world );
+void Entity_move_y( SG_Entity *ent, float y_distance, SG_World *world );
 
 #endif // ENTITY_H

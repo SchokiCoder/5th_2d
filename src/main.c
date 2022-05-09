@@ -280,53 +280,53 @@ void btn_start_edit_click( void *ptr )
 #include "entity.h"
 void gen_demo_horizontal( void )
 {
-	World out = World_new("test", 128, 128);
+	SG_World out = World_new(128, 128);
 
-	out.blocks[0][0] = B_STONE;
-	out.blocks[0][1] = B_STONE;
-	out.blocks[0][5] = B_DIRT;
+	out.blocks[0][0][0] = B_STONE;
+	out.blocks[0][1][0] = B_STONE;
+	out.blocks[0][5][0] = B_DIRT;
 
-	out.blocks[1][5] = B_DIRT;
-	out.blocks[1][6] = B_STONE;
+	out.blocks[1][5][0] = B_DIRT;
+	out.blocks[1][6][0] = B_STONE;
 
-	out.blocks[2][5] = B_DIRT;
-	out.blocks[2][6] = B_STONE;
+	out.blocks[2][5][0] = B_DIRT;
+	out.blocks[2][6][0] = B_STONE;
 
-	out.blocks[3][5] = B_DIRT;
-	out.blocks[3][6] = B_STONE;
+	out.blocks[3][5][0] = B_DIRT;
+	out.blocks[3][6][0] = B_STONE;
 
-	out.blocks[4][5] = B_DIRT;
-	out.blocks[4][6] = B_STONE;
+	out.blocks[4][5][0] = B_DIRT;
+	out.blocks[4][6][0] = B_STONE;
 
-	out.blocks[5][5] = B_DIRT;
-	out.blocks[5][6] = B_STONE;
+	out.blocks[5][5][0] = B_DIRT;
+	out.blocks[5][6][0] = B_STONE;
 
-	out.blocks[6][6] = B_STONE;
+	out.blocks[6][6][0] = B_STONE;
 
-	out.blocks[7][6] = B_STONE;
+	out.blocks[7][6][0] = B_STONE;
 
-	out.blocks[10][0] = B_STONE;
-	out.blocks[10][1] = B_STONE;
+	out.blocks[10][0][0] = B_STONE;
+	out.blocks[10][1][0] = B_STONE;
 
-	out.walls[0][3] = B_DIRT;
-	out.walls[0][4] = B_DIRT;
+	out.blocks[0][3][1] = B_DIRT;
+	out.blocks[0][4][1] = B_DIRT;
 
-	out.walls[1][3] = B_DIRT;
-	out.walls[1][4] = B_DIRT;
+	out.blocks[1][3][1] = B_DIRT;
+	out.blocks[1][4][1] = B_DIRT;
 
-	out.walls[2][3] = B_DIRT;
-	out.walls[2][4] = B_DIRT;
+	out.blocks[2][3][1] = B_DIRT;
+	out.blocks[2][4][1] = B_DIRT;
 
-	out.walls[3][3] = B_DIRT;
-	out.walls[3][4] = B_DIRT;
+	out.blocks[3][3][1] = B_DIRT;
+	out.blocks[3][4][1] = B_DIRT;
 
-	out.walls[4][4] = B_DIRT;
+	out.blocks[4][4][1] = B_DIRT;
 
 	out.entities[0].rect.x = 2.0f * (float) BLOCK_SIZE;
 	out.entities[0].rect.y = 1.0f * (float) BLOCK_SIZE;
 
-	World_write(&out);
-	World_clear(&out);
+	World_write(&out, "test");
+	SG_World_clear(&out);
 }
 
 int main()
@@ -793,7 +793,7 @@ int main()
 	lbl_source2.rect.y = lbl_source1.rect.y + lbl_source1.rect.h;
 
     // mainloop
-    float ts_draw, ts_now;
+    float ts_draw = 0.0f, ts_now;
 
     while (main_active)
     {

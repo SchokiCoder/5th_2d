@@ -16,109 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <SG_world.h>
+#include <SG_physics.h>
 #include "entity.h"
-
-bool point_within_box( FPoint *pt, FRect *box )
-{
-    if (pt->x > box->x && pt->x < (box->x + box->w) &&
-    	pt->y > box->y && pt->y < (box->y + box->h)) {
-		return true;
-	}
-
-	return false;
-}
-
-bool box_within_box( FRect *box_1, FRect *box_2 )
-{
-    FPoint pt;
-
-    // is box 1 within box 2
-    pt.x = box_1->x;
-    pt.y = box_1->y;
-
-    if (point_within_box(&pt, box_2)) {
-    	return true;
-	}
-
-	pt.x = box_1->x + box_1->w;
-    pt.y = box_1->y;
-
-    if (point_within_box(&pt, box_2)) {
-    	return true;
-	}
-
-	pt.x = box_1->x;
-    pt.y = box_1->y + box_1->h;
-
-    if (point_within_box(&pt, box_2)) {
-    	return true;
-	}
-
-	pt.x = box_1->x + box_1->w;
-    pt.y = box_1->y + box_1->h;
-
-    if (point_within_box(&pt, box_2)) {
-    	return true;
-	}
-
-	// is box 2 within box 1
-	pt.x = box_2->x;
-    pt.y = box_2->y;
-
-    if (point_within_box(&pt, box_1)) {
-    	return true;
-	}
-
-	pt.x = box_2->x + box_1->w;
-    pt.y = box_2->y;
-
-    if (point_within_box(&pt, box_1)) {
-    	return true;
-	}
-
-	pt.x = box_2->x;
-    pt.y = box_2->y + box_1->h;
-
-    if (point_within_box(&pt, box_1)) {
-    	return true;
-	}
-
-	pt.x = box_2->x + box_1->w;
-    pt.y = box_2->y + box_1->h;
-
-    if (point_within_box(&pt, box_1)) {
-    	return true;
-	}
-
-    return false;
-}
 
 /*
 	player_pos: 		player.rect.x or y
 	player_velocity:	player.velocity_x or y
 */
-bool WldEntity_move( WldEntity *wldent, float *pos, float *velocity, float distance, World *world )
+bool_t Entity_move( SG_Entity *ent, float *pos, float *velocity, float distance, SG_World *world )
 {
-	bool collision = false;
+	bool_t collision = FALSE;
 	int_fast32_t x1, y1, x2, y2;
-	FRect block_hitbox;
+	SG_FRect block_hitbox;
 
 	// set position
 	*pos += distance;
 
 	// calculate which blocks to check
-	x1 = wldent->rect.x / BLOCK_SIZE;
-	y1 = wldent->rect.y / BLOCK_SIZE;
-	x2 = (wldent->rect.x + wldent->rect.w) / BLOCK_SIZE + 1;
-	y2 = (wldent->rect.y + wldent->rect.h) / BLOCK_SIZE + 1;
-
-#ifdef _DEBUG
-	// update check box
-	wldent->box.x = x1 * BLOCK_SIZE;
-	wldent->box.y = y1 * BLOCK_SIZE;
-	wldent->box.w = (x2 * BLOCK_SIZE) - wldent->box.x;
-	wldent->box.h = (y2 * BLOCK_SIZE) - wldent->box.y;
-#endif
+	x1 = ent->rect.x / BLOCK_SIZE;
+	y1 = ent->rect.y / BLOCK_SIZE;
+	x2 = (ent->rect.x + ent->rect.w) / BLOCK_SIZE + 1;
+	y2 = (ent->rect.y + ent->rect.h) / BLOCK_SIZE + 1;
 
 	// check if within bounds
 	if (x1 < 0)
@@ -154,17 +73,17 @@ bool WldEntity_move( WldEntity *wldent, float *pos, float *velocity, float dista
 		for (int_fast32_t y = y1; y <= y2; y++)
 		{
 			// if non-solid block here, skip
-			if (world->blocks[x][y] == B_NONE)
+			if (world->blocks[x][y][0] == B_NONE)
 				continue;
 
 			block_hitbox.x = x * BLOCK_SIZE;
 			block_hitbox.y = y * BLOCK_SIZE;
 
 			// if collision
-			if (box_within_box(&wldent->rect, &block_hitbox))
+			if (SG_box_within_box(&ent->rect, &block_hitbox))
 			{
 				// flag, reset pos, kill velocity
-				collision = true;
+				collision = TRUE;
 				*pos -= distance;
 				*velocity = 0.0f;
 			}
@@ -174,21 +93,21 @@ bool WldEntity_move( WldEntity *wldent, float *pos, float *velocity, float dista
 	return collision;
 }
 
-void WldEntity_move_x( WldEntity *wldent, float x_distance, World *world )
+void Entity_move_x( SG_Entity *ent, float x_distance, SG_World *world )
 {
-	WldEntity_move(wldent, &wldent->rect.x, &wldent->velocity_x, x_distance, world);
+	Entity_move(ent, &ent->rect.x, &ent->velocity_x, x_distance, world);
 }
 
-void WldEntity_move_y( WldEntity *wldent, float y_distance, World *world )
+void Entity_move_y( SG_Entity *ent, float y_distance, SG_World *world )
 {
-	bool collision;
+	bool_t collision;
 
 	// move
-	collision = WldEntity_move(wldent, &wldent->rect.y, &wldent->velocity_y, y_distance, world);
+	collision = Entity_move(ent, &ent->rect.y, &ent->velocity_y, y_distance, world);
 
 	// if falling and collision happened, set grounded, else set non-grounded
 	if (y_distance > 0.0f && collision)
-		wldent->grounded = true;
+		ent->grounded = TRUE;
 	else
-		wldent->grounded = false;
+		ent->grounded = FALSE;
 }

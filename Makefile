@@ -16,9 +16,9 @@
 
 CC = cc
 APP_NAME = chemarium
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -O3
-INCLUDE = -I /usr/include/SDL2
-LIBS = -l m -l SDL2 -l SDL2_image -l SDL2_ttf
+CFLAGS = -std=c99 -Wall -Wextra -O3
+INCLUDE = -I /usr/include/SDL2 -I /usr/include/schoki_misc -I /usr/include/schoki_gui -I /usr/include/schoki_game
+LIBS = -l SDL2 -l SDL2_image -l SDL2_ttf -l schoki_misc -l schoki_gui -l schoki_game
 
 INSTALL_BIN_DIR = /usr/bin
 INSTALL_ASSETS_DIR = /usr/share/${APP_NAME}

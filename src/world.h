@@ -19,33 +19,12 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <SDL.h>
-#include <SM_string.h>
-#include <stdbool.h>
-#include "block.h"
+#include <SG_world.h>
 
-typedef struct WldEntity WldEntity;
+SG_World World_new( const size_t width, const size_t height );
 
-typedef struct World
-{
-	bool invalid;
-	SM_String world_name;
-	size_t width;
-	size_t height;
-    Block **blocks;					// actual terrain
-    Block **walls;					// background terrain
-    size_t ent_count;
-    WldEntity *entities;
-    SDL_Texture ***block_textures;
-    SDL_Texture ***wall_textures;
-} World ;
+SG_World World_from_file( const char *world_name );
 
-World World_new( const char *world_name, const size_t width, const size_t height );
-
-World World_from_file( const char *world_name );
-
-void World_write( World *world );
-
-void World_clear( World *world );
+void World_write( SG_World *world, const char *world_name );
 
 #endif // WORLD_H

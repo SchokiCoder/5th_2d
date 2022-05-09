@@ -19,8 +19,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <SG_types.h>
 #include <SDL_render.h>
-#include "types.h"
 #include "entity.h"
 #include "block.h"
 
@@ -39,10 +39,10 @@ typedef struct Game
 	SGUI_Sprite spr_blocks[B_LAST + 1];
 	SGUI_Sprite spr_walls[B_LAST + 1];
 	SGUI_Sprite spr_ents[E_LAST + 1];
-	World world;
+	SG_World world;
 	SDL_Event event;
 	const uint8_t *kbd;
-    IPoint wld_draw_pts[2];
+    SG_IPoint wld_draw_pts[2];
     SDL_Rect camera;
 } Game ;
 

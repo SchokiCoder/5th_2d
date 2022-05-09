@@ -108,30 +108,6 @@ int32_t get_config_path( SM_String *out )
 	return 0;
 }
 
-FileAccess file_check_access( const char *path )
-{
-	// check for write access
-	FILE *f = fopen(path, "a");
-
-	if (f != NULL)
-	{
-		fclose(f);
-		return FA_WRITE;
-	}
-
-	// check for read access
-	f = fopen(path, "r");
-
-	if (f != NULL)
-	{
-		fclose(f);
-		return FA_READ;
-	}
-
-	// no access
-	return FA_NONE;
-}
-
 bool file_check_existence( const char *path )
 {
     FILE *f = fopen(path, "r");

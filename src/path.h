@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <SM_string.h>
-#include "types.h"
 
 #ifdef _WIN32
 	static const char SLASH[] = "\\";
@@ -42,8 +41,6 @@ int32_t get_base_path( SM_String *out );
 int32_t get_world_path( SM_String *out );
 
 int32_t get_config_path( SM_String *out );
-
-FileAccess file_check_access( const char *path );
 
 bool file_check_existence( const char *path );
 

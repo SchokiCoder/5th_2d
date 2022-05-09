@@ -106,7 +106,6 @@ void Game_setup( Game *game )
 		game->spr_ents[i] = SGUI_Sprite_new();
 
 	// open world and check
-	game->world.invalid = false;
 	game->world = World_from_file(game->world_name);
 
 	if (game->world.invalid)
@@ -175,8 +174,8 @@ void Game_setup( Game *game )
     {
     	for (uint_fast32_t y = 0; y < game->world.height; y++)
     	{
-            game->world.block_textures[x][y] = game->spr_blocks[game->world.blocks[x][y]].texture;
-            game->world.wall_textures[x][y] = game->spr_walls[game->world.walls[x][y]].texture;
+            game->world.block_textures[x][y][0] = game->spr_blocks[game->world.blocks[x][y][0]].texture;
+            game->world.block_textures[x][y][1] = game->spr_walls[game->world.blocks[x][y][0]].texture;
 		}
 	}
 
@@ -201,7 +200,7 @@ void Game_run( Game *game )
     SGUI_Label lbl_grounded_val;
 #endif
 
-    WldEntity *player = NULL;
+    SG_Entity *player = NULL;
 	SDL_Rect temp;
 	float ts1, ts2, delta = 0.0f;
 	float x_step = 0.0f;
@@ -380,13 +379,13 @@ void Game_run( Game *game )
 		if (player->velocity_x != 0.0f)
 		{
 			x_step = player->velocity_x * delta;
-			WldEntity_move_x(player, x_step, &game->world);
+			Entity_move_x(player, x_step, &game->world);
 		}
 
 		if (player->velocity_y != 0.0f)
 		{
 			y_step = player->velocity_y * delta;
-			WldEntity_move_y(player, y_step, &game->world);
+			Entity_move_y(player, y_step, &game->world);
 		}
 
 #ifdef _DEBUG
@@ -397,7 +396,6 @@ void Game_run( Game *game )
         lbl_velocity_x_val.rect.h = lbl_velocity_x_val.sprite.surface->h;
 
         sprintf(lbl_velocity_y_val.text.str, "%f", player->velocity_y);
-        sprintf(lbl_velocity_y_val.text.str, "%f", player->rect.y);
         lbl_velocity_y_val.text.len = strlen(lbl_velocity_y_val.text.str);
         SGUI_Label_update_sprite(&lbl_velocity_y_val);
         lbl_velocity_y_val.rect.w = lbl_velocity_y_val.sprite.surface->w;
@@ -422,7 +420,7 @@ void Game_run( Game *game )
         lbl_grounded_val.rect.h = lbl_grounded_val.sprite.surface->h;
 #endif
 
-		// update viewport
+		// update camera
 		game->camera.x = (player->rect.x + player->rect.w) - (game->camera.w / 2);
 		game->camera.y = (player->rect.y + player->rect.h) - (game->camera.h / 2);
 
@@ -442,8 +440,14 @@ void Game_run( Game *game )
 		game->wld_draw_pts[0].x = (game->camera.x / BLOCK_SIZE);
 		game->wld_draw_pts[0].y = (game->camera.y / BLOCK_SIZE);
 
-		game->wld_draw_pts[1].x = ((game->camera.x + game->camera.w) / BLOCK_SIZE);
-		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE);
+		game->wld_draw_pts[1].x = ((game->camera.x + game->camera.w) / BLOCK_SIZE) + 1;
+		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE) + 1;
+
+		if (game->wld_draw_pts[1].x >= (s32_t) game->world.width)
+			game->wld_draw_pts[1].x = game->world.width;
+
+		if (game->wld_draw_pts[1].y >= (s32_t) game->world.height)
+			game->wld_draw_pts[1].y = game->world.height;
 
 		// draw background
     	SDL_SetRenderDrawColor(game->renderer, 155, 219, 245, 255);
@@ -461,13 +465,13 @@ void Game_run( Game *game )
 
 				SDL_RenderCopy(
 					game->renderer,
-					game->world.wall_textures[x][y],
+					game->world.block_textures[x][y][1],
 					NULL,
 					&temp);
 
 				SDL_RenderCopy(
 					game->renderer,
-					game->world.block_textures[x][y],
+					game->world.block_textures[x][y][0],
 					NULL,
 					&temp);
 			}
@@ -497,14 +501,6 @@ void Game_run( Game *game )
 			&temp);
 
 #ifdef _DEBUG
-		// and optical collision check box (not actual hitbox)
-		temp = player->box;
-		temp.x -= game->camera.x;
-		temp.y -= game->camera.y;
-
-		SDL_SetRenderDrawColor(game->renderer, 255, 0, 0, 255);
-		SDL_RenderDrawRect(game->renderer, &temp);
-
 		// draw debug menu
 		SGUI_Menu_draw(&mnu_debugvals);
 #endif
@@ -529,7 +525,7 @@ void Game_edit( Game *game, const size_t width, const size_t height )
     SDL_Rect temp;
     uint32_t mouse_state;
     SDL_Rect mouse_pos;
-    FPoint edit_pos = {
+    SG_FPoint edit_pos = {
     	.x = 0.0f,
     	.y = 0.0f,
     };
@@ -539,7 +535,7 @@ void Game_edit( Game *game, const size_t width, const size_t height )
     };
     Block edit_block = B_FIRST;
 	float ts1, ts2, delta = 0.0f;
-	float ts_ui_event;
+	float ts_ui_event = 0.0f;
 	bool edit_draw_grid = true;
 	bool edit_draw_blocks = true;
 	bool edit_draw_walls = true;
@@ -554,20 +550,20 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 
     if (file_check_existence(filepath.str) == false)
     {
-		game->world = World_new(game->world_name, width, height);
+		game->world = World_new(width, height);
 
 		for (size_t x = 0; x < game->world.width; x++)
 		{
 			for (size_t y = 0; y < game->world.height; y++)
 			{
-				game->world.blocks[x][y] = B_NONE;
-				game->world.walls[x][y] = B_NONE;
+				game->world.blocks[x][y][0] = B_NONE;
+				game->world.blocks[x][y][1] = B_NONE;
 			}
 		}
 
-        World_write(&game->world);
+        World_write(&game->world, game->world_name);
 
-        World_clear(&game->world);
+        SG_World_clear(&game->world);
     }
 
     // setup
@@ -597,15 +593,15 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 				// if left click, edit block
 				if (mouse_state & SDL_BUTTON_LMASK)
 				{
-					game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
-            		game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
+					game->world.blocks[edit_pt.x][edit_pt.y][0] = edit_block;
+            		game->world.block_textures[edit_pt.x][edit_pt.y][0] = game->spr_blocks[edit_block].texture;
 				}
 
 				// if right click, edit wall
 				else if (mouse_state & SDL_BUTTON_RMASK)
 				{
-					game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
-            		game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
+					game->world.blocks[edit_pt.x][edit_pt.y][1] = edit_block;
+            		game->world.block_textures[edit_pt.x][edit_pt.y][1] = game->spr_walls[edit_block].texture;
 				}
 				break;
 
@@ -706,7 +702,7 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 			if (game->kbd[SDL_SCANCODE_LCTRL] &&
 				game->kbd[SDL_SCANCODE_S])
 			{
-				World_write(&game->world);
+				World_write(&game->world, game->world_name);
 				ts_ui_event = now();
 			}
 
@@ -722,15 +718,15 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 		// arrow up, set wall
 		if (game->kbd[SDL_SCANCODE_DOWN])
 		{
-			game->world.walls[edit_pt.x][edit_pt.y] = edit_block;
-            game->world.wall_textures[edit_pt.x][edit_pt.y] = game->spr_walls[edit_block].texture;
+			game->world.blocks[edit_pt.x][edit_pt.y][1] = edit_block;
+            game->world.block_textures[edit_pt.x][edit_pt.y][1] = game->spr_walls[edit_block].texture;
 		}
 
 		// arrow down, set block
 		if (game->kbd[SDL_SCANCODE_UP])
 		{
-            game->world.blocks[edit_pt.x][edit_pt.y] = edit_block;
-            game->world.block_textures[edit_pt.x][edit_pt.y] = game->spr_blocks[edit_block].texture;
+            game->world.blocks[edit_pt.x][edit_pt.y][0] = edit_block;
+            game->world.block_textures[edit_pt.x][edit_pt.y][0] = game->spr_blocks[edit_block].texture;
 		}
 
 		// update viewport
@@ -756,6 +752,12 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 		game->wld_draw_pts[1].x = ((game->camera.x + game->camera.w) / BLOCK_SIZE);
 		game->wld_draw_pts[1].y = ((game->camera.y + game->camera.h) / BLOCK_SIZE);
 
+		if (game->wld_draw_pts[1].x >= (s32_t) game->world.width)
+			game->wld_draw_pts[1].x = game->world.width;
+
+		if (game->wld_draw_pts[1].y >= (s32_t) game->world.height)
+			game->wld_draw_pts[1].y = game->world.height;
+
 		// draw background
     	SDL_SetRenderDrawColor(game->renderer, 50, 50, 50, 255);
     	SDL_RenderClear(game->renderer);
@@ -774,7 +776,7 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 
 					SDL_RenderCopy(
 						game->renderer,
-						game->world.wall_textures[x][y],
+						game->world.block_textures[x][y][1],
 						NULL,
 						&temp);
 				}
@@ -795,7 +797,7 @@ void Game_edit( Game *game, const size_t width, const size_t height )
 
 					SDL_RenderCopy(
 						game->renderer,
-						game->world.block_textures[x][y],
+						game->world.block_textures[x][y][0],
 						NULL,
 						&temp);
 				}
@@ -897,7 +899,7 @@ void Game_clear( Game *game )
 	}
 
 	// world
-	World_clear(&game->world);
+	SG_World_clear(&game->world);
 
 	// string
 	SM_String_clear(&game->msg);
