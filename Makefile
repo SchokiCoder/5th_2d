@@ -1,4 +1,4 @@
-#    Chemarium
+#    2d_platformer
 #    Copyright (C) 2022  Andy Frank Schoknecht
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 CC = cc
-APP_NAME = chemarium
+APP_NAME = 2d_platformer
 CFLAGS = -std=c99 -Wall -Wextra -O3
 INCLUDE = -I /usr/include/SDL2 -I /usr/include/schoki_misc -I /usr/include/schoki_gui -I /usr/include/schoki_game
 LIBS = -l SDL2 -l SDL2_image -l SDL2_ttf -l schoki_misc -l schoki_gui -l schoki_game

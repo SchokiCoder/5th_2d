@@ -1,5 +1,5 @@
 /*
-	Chemarium
+	2d_platformer
 	Copyright (C) 2022	Andy Frank Schoknecht
 
 	This program is free software: you can redistribute it and/or modify
@@ -19,9 +19,9 @@
 #ifndef APP_H
 #define APP_H
 
-static const char APP_NAME[] = "Chemarium";
+static const char APP_NAME[] = "2d_platformer";
 static const char APP_LICENSE[] = "GPLv3";
-static const char APP_SOURCE[] = "https://github.com/SchokiCoder/chemarium.git";
+static const char APP_SOURCE[] = "https://github.com/SchokiCoder/2d_platformer.git";
 #define APP_MAJOR 0
 #define APP_MINOR 4
 #define APP_PATCH 1

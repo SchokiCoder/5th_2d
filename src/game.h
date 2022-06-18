@@ -1,5 +1,5 @@
 /*
-	Chemarium
+	2d_platformer
 	Copyright (C) 2022	Andy Frank Schoknecht
 
 	This program is free software: you can redistribute it and/or modify
