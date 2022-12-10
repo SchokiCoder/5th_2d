@@ -1,20 +1,21 @@
 /*
-	2d_platformer
-	Copyright (C) 2022	Andy Frank Schoknecht
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * 2d_platformer
+ * Copyright (C) 2022  Andy Frank Schoknecht
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not see
+ * <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
+ */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -23,7 +24,7 @@
 #include "entity.h"
 #include "world.h"
 
-SG_World World_new( const size_t width, const size_t height )
+SG_World World_new(const size_t width, const size_t height)
 {
 	SG_World world = SG_World_new(BLOCK_SIZE, width, height, 2);
 
@@ -40,14 +41,13 @@ SG_World World_new( const size_t width, const size_t height )
 	return world;
 }
 
-SG_World World_from_file( const char *world_name )
+SG_World World_from_file(const char *world_name)
 {
 	SG_World world;
 	SM_String filepath = SM_String_new(8);
 
 	// get path
-	if (get_world_path(&filepath) != 0)
-	{
+	if (get_world_path(&filepath) != 0) {
 		world.invalid = true;
 		return world;
 	}
@@ -59,8 +59,7 @@ SG_World World_from_file( const char *world_name )
 	// read
 	world = SG_World_from_file(filepath.str);
 
-	if (world.invalid)
-	{
+	if (world.invalid) {
 		SM_String msg = SM_String_new(16);
 		SM_String_copy_cstr(&msg, "World \"");
 		SM_String_append_cstr(&msg, world_name);
@@ -73,13 +72,12 @@ SG_World World_from_file( const char *world_name )
 	return world;
 }
 
-void World_write( SG_World *world, const char *world_name )
+void World_write(SG_World * world, const char *world_name)
 {
 	SM_String filepath = SM_String_new(8);
 
 	// get path
-	if (get_world_path(&filepath) != 0)
-	{
+	if (get_world_path(&filepath) != 0) {
 		world->invalid = true;
 		return;
 	}
@@ -91,8 +89,7 @@ void World_write( SG_World *world, const char *world_name )
 	// write
 	SG_World_write(world, filepath.str);
 
-	if (world->invalid)
-	{
+	if (world->invalid) {
 		SM_String msg = SM_String_new(16);
 		SM_String_copy_cstr(&msg, "World \"");
 		SM_String_append_cstr(&msg, world_name);
@@ -101,5 +98,5 @@ void World_write( SG_World *world, const char *world_name )
 		SM_String_clear(&msg);
 	}
 
-    SM_String_clear(&filepath);
+	SM_String_clear(&filepath);
 }

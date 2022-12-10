@@ -1,20 +1,21 @@
 /*
-	2d_platformer
-	Copyright (C) 2022	Andy Frank Schoknecht
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * 2d_platformer
+ * Copyright (C) 2022  Andy Frank Schoknecht
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not see
+ * <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
+ */
 
 #include <sys/stat.h>
 #include <stdio.h>
@@ -25,7 +26,7 @@
 #include "app.h"
 #include "path.h"
 
-int32_t get_base_path( SM_String *out )
+int32_t get_base_path(SM_String * out)
 {
 	int32_t rc;
 
@@ -39,16 +40,14 @@ int32_t get_base_path( SM_String *out )
 	/* in case, create dir */
 	errno = 0;
 
-	#ifdef _WIN32
-		rc = mkdir(out->str);
-	#else
-		rc = mkdir(out->str, S_IRWXU);
-	#endif
+#ifdef _WIN32
+	rc = mkdir(out->str);
+#else
+	rc = mkdir(out->str, S_IRWXU);
+#endif
 
-	if (rc == -1)
-	{
-		if (errno != EEXIST)
-		{
+	if (rc == -1) {
+		if (errno != EEXIST) {
 			SM_log_err("Could not get userfiles path.");
 			return 1;
 		}
@@ -57,7 +56,7 @@ int32_t get_base_path( SM_String *out )
 	return 0;
 }
 
-int32_t get_world_path( SM_String *out )
+int32_t get_world_path(SM_String * out)
 {
 	int32_t rc;
 
@@ -74,16 +73,14 @@ int32_t get_world_path( SM_String *out )
 	/* in case, create dir */
 	errno = 0;
 
-	#ifdef _WIN32
-		rc = mkdir(out->str);
-	#else
-		rc = mkdir(out->str, S_IRWXU);
-	#endif
+#ifdef _WIN32
+	rc = mkdir(out->str);
+#else
+	rc = mkdir(out->str, S_IRWXU);
+#endif
 
-	if (rc == -1)
-	{
-		if (errno != EEXIST)
-		{
+	if (rc == -1) {
+		if (errno != EEXIST) {
 			SM_log_err("Could not create worlds directory.");
 			return 1;
 		}
@@ -92,7 +89,7 @@ int32_t get_world_path( SM_String *out )
 	return 0;
 }
 
-int32_t get_config_path( SM_String *out )
+int32_t get_config_path(SM_String * out)
 {
 	int32_t rc;
 
@@ -108,11 +105,11 @@ int32_t get_config_path( SM_String *out )
 	return 0;
 }
 
-bool file_check_existence( const char *path )
+bool file_check_existence(const char *path)
 {
-    FILE *f = fopen(path, "r");
+	FILE *f = fopen(path, "r");
 
-    if (f == NULL)
+	if (f == NULL)
 		return false;
 
 	fclose(f);

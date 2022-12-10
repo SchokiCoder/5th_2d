@@ -1,27 +1,28 @@
 /*
-	2d_platformer
-	Copyright (C) 2022	Andy Frank Schoknecht
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * 2d_platformer
+ * Copyright (C) 2022  Andy Frank Schoknecht
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not see
+ * <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
+ */
 
 #include <SM_log.h>
 #include <SM_dict.h>
 #include "path.h"
 #include "config.h"
 
-Config Config_new( void )
+Config Config_new(void)
 {
 	Config cfg = {
 		.invalid = false,
@@ -35,52 +36,56 @@ Config Config_new( void )
 	return cfg;
 }
 
-void Config_load( Config *cfg )
+void Config_load(Config * cfg)
 {
 	SM_String filepath = SM_String_new(16);
 	SM_String msg = SM_String_new(1);
 
 	// get path
-	if (get_config_path(&filepath) != 0)
-	{
+	if (get_config_path(&filepath) != 0) {
 		SM_String_clear(&filepath);
 		cfg->invalid = true;
 		return;
 	}
-
 	// read file
 	SM_Dict dict = SM_Dict_from_file(filepath.str);
 
-	if (dict.invalid)
-	{
+	if (dict.invalid) {
 		SM_String_clear(&filepath);
 		cfg->invalid = true;
 		SM_log_warn("Config could not be loaded.");
 		return;
 	}
-
 	// convert dict into config
-    for (size_t i = 0; i < dict.len; i++)
-    {
+	for (size_t i = 0; i < dict.len; i++) {
 		// window pos, size
 		if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_X))
-			cfg->gfx_window_x = strtol(dict.data[i].value.str, NULL, 10);
+			cfg->gfx_window_x =
+			    strtol(dict.data[i].value.str, NULL, 10);
 
-		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_Y))
-			cfg->gfx_window_y = strtol(dict.data[i].value.str, NULL, 10);
+		else if (SM_strequal
+			 (dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_Y))
+			cfg->gfx_window_y =
+			    strtol(dict.data[i].value.str, NULL, 10);
 
-		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_W))
-			cfg->gfx_window_w = strtol(dict.data[i].value.str, NULL, 10);
+		else if (SM_strequal
+			 (dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_W))
+			cfg->gfx_window_w =
+			    strtol(dict.data[i].value.str, NULL, 10);
 
-		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_H))
-			cfg->gfx_window_h = strtol(dict.data[i].value.str, NULL, 10);
+		else if (SM_strequal
+			 (dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_H))
+			cfg->gfx_window_h =
+			    strtol(dict.data[i].value.str, NULL, 10);
 
-		else if (SM_strequal(dict.data[i].key.str, CFG_SETTING_GFX_WINDOW_FULLSCREEN))
-			cfg->gfx_window_fullscreen = strtol(dict.data[i].value.str, NULL, 10);
+		else if (SM_strequal
+			 (dict.data[i].key.str,
+			  CFG_SETTING_GFX_WINDOW_FULLSCREEN))
+			cfg->gfx_window_fullscreen =
+			    strtol(dict.data[i].value.str, NULL, 10);
 
 		// unknown option
-		else
-		{
+		else {
 			SM_String_copy_cstr(&msg, "Unknown config setting \"");
 			SM_String_append(&msg, &dict.data[i].key);
 			SM_String_append_cstr(&msg, "\".");
@@ -93,18 +98,16 @@ void Config_load( Config *cfg )
 	SM_Dict_clear(&dict);
 }
 
-void Config_save( Config *cfg )
+void Config_save(Config * cfg)
 {
 	SM_String filepath = SM_String_new(16);
 
 	/* get path */
-	if (get_config_path(&filepath) != 0)
-	{
+	if (get_config_path(&filepath) != 0) {
 		SM_String_clear(&filepath);
 		cfg->invalid = true;
 		return;
 	}
-
 	// convert config into dict
 	SM_Dict dict = SM_Dict_new(1);
 	char temp[10];
