@@ -21,7 +21,7 @@
 #define APP_H
 
 static const char APP_NAME[] = "2d_platformer";
-static const char APP_LICENSE[] = "GPLv3";
+static const char APP_LICENSE[] = "GPLv2";
 static const char APP_SOURCE[] =
     "https://github.com/SchokiCoder/2d_platformer.git";
 #define APP_MAJOR 0

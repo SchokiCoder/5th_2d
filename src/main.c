@@ -777,7 +777,7 @@ int main()
 	    btn_license_close.rect.y + btn_license_close.rect.h;
 
 	SM_String_copy_cstr(&lbl_notice1.text,
-			    "You should have received a copy of the GNU General Public License");
+			    "You should have received a copy of the GNU General Public License along with this program; if not see");
 	SGUI_Label_update_sprite(&lbl_notice1);
 	lbl_notice1.rect.w = lbl_notice1.sprite.surface->w;
 	lbl_notice1.rect.h = lbl_notice1.sprite.surface->h;
@@ -785,7 +785,7 @@ int main()
 	lbl_notice1.rect.y = lbl_license.rect.y + lbl_license.rect.h;
 
 	SM_String_copy_cstr(&lbl_notice2.text,
-			    "along with this program.  If not, see <https://www.gnu.org/licenses/>.");
+			    "<https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.");
 	SGUI_Label_update_sprite(&lbl_notice2);
 	lbl_notice2.rect.w = lbl_notice2.sprite.surface->w;
 	lbl_notice2.rect.h = lbl_notice2.sprite.surface->h;
